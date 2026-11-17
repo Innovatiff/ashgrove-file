@@ -56,6 +56,34 @@ Everything about it is in three places: [`app/(site)`](<app/(site)>) (the
 pages and the stylesheet), [`components/site`](components/site) and
 [`lib/site`](lib/site).
 
+**The home page is a place.** It is drawn as the inside of the building the
+rooms are in, and read in the order a visitor would walk it:
+
+1. **Reception.** The headline, a wall clock, a board of what is open today
+   with the live count of who has gone in and solved it, and a key rack with
+   one hook for each room in the catalogue. The key for an open room hangs on
+   its hook and is a link to that room. Under it all, the desk.
+2. **On the desk**, a practice box that a visitor can really open (below).
+3. **The briefing**: how it works, as four notices pinned to a board.
+4. **The lockers**: the four house rules, as the four things a visitor can
+   leave behind because no room will ask for them.
+5. **The corridor**: the doors, the plate for each open room, the sealed ones.
+
+The furniture is inline SVG and CSS: line drawing in ink, brass for the
+fittings, wax red for seals. Nothing is a photograph and nothing is animated.
+The clock's hands are redrawn once a minute.
+
+**The practice box.** Three things in the lobby add up to a time: the brass
+plate under the clock (it runs ten minutes fast), the last line of the desk
+ledger, and the card tied to the box. The lobby clock really does run ten
+minutes ahead of the visitor's own. A wrong answer that is worth a word gets
+one. It is a toy, checked in the browser ([`lib/site/practice.ts`](lib/site/practice.ts)),
+and nothing like the rooms, which are checked on the server. Its answer is
+still kept as a SHA-256 fingerprint and not as text, and a unit test fails if
+the answer is spelled out in the page's source. To change the puzzle, change
+`CLOCK_FAST_MINUTES` or `LET_OUT_BY_THE_CLOCK` and replace the fingerprint
+with that of the new answer written as `HH:MM`.
+
 **The name.** It is written once, in [`lib/site/brand.ts`](lib/site/brand.ts).
 Change `SITE.name` there and the header, the page titles, the footer, the
 legal pages and the line at the foot of the room all follow. Then redraw the
@@ -88,6 +116,8 @@ tile. The one mask is on a room's photograph, the way the room shows it.
 | `--ink-3` | `#6B6458` | Labels and notes |
 | `--rule`, `--rule-2` | `#D8D1C3`, `#B9B0A0` | Hairlines, field borders |
 | `--wax`, `--wax-deep` | `#A4241B`, `#7C170F` | The one accent: seals, the mark, emphasis, focus |
+| `--brass` | `#B8893A` | Fittings in the drawings: the clock, bells, keys, plates |
+| `--wallpaper` | `#E3DCCF` | The pattern on the walls and the floor tiles, a shade off the page |
 
 Titles are Fraunces, everything else Instrument Sans. Both are downloaded at
 build time and served from the site, so a visitor's browser never asks Google
@@ -327,7 +357,7 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | 92 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. Nothing from `answers.json` is in a tracked file. |
+| `npm run test:unit` | 98 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Nothing from `answers.json` is in a tracked file. |
 | `npm run test:rules` | 43 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. Nobody can read or write the contact inbox. |
 | `npm run test:functions` | 44 tests driving `checkAnswer`, `signOath`, `takeHint`, `accuse` and `sendMessage` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, a case that is counted once, and a contact form that tidies what it is sent, refuses what is wrong and stops at three messages a day. |
 | `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`. |
@@ -669,10 +699,11 @@ app/
   global-not-found.tsx       the one 404 page, for any address on the site
   robots.ts  sitemap.ts
 components/
-  site/                      the main website: Masthead, Colophon, Corridor
-                             (the drawing), Seal, RoomPlate, LiveCount,
-                             PageHead, Clauses, ContactForm, AnalyticsChoice,
-                             Arrow
+  site/                      the main website: Masthead, Colophon, PageHead,
+                             Clauses, ContactForm, AnalyticsChoice, Arrow, and
+                             the home page's furniture: LobbyClock, TodayBoard,
+                             KeyRack, ReceptionDesk, PracticeBox, Padlock,
+                             Corridor, RoomPlate, LiveCount, Seal
   index.ts                   everything the room exposes for later rooms
   ui/                        Frame, DoubleRule, Section, FileLabel, BlendImage,
                              PinnedPhoto, Reveal, EvidenceCard, Redaction,
@@ -692,8 +723,8 @@ components/
 lib/
   site/                      the main website: brand (the name, the menu),
                              catalogue (the rooms), stats (the public count),
-                             contact (the form's checks and its one call),
-                             fonts, fonts-404
+                             practice (the box on the desk), contact (the
+                             form's checks and its one call), fonts, fonts-404
   consent.ts  use-consent.ts the answer about analytics, for the whole site
   firebase.ts                one initialisation; analytics only once allowed
   api.ts                     the room's four callables, as the browser calls them

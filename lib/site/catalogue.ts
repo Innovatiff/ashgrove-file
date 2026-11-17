@@ -64,10 +64,13 @@ export const ASHGROVE: OpenRoom = {
   enter: 'Open the file',
 };
 
+// Five doors, as in the drawing of the corridor, the key rack and the board.
 export const CATALOGUE: readonly CatalogueRoom[] = [
   ASHGROVE,
-  { status: 'sealed', number: '002', note: 'The next room. Still sealed.' },
-  { status: 'sealed', number: '003', note: 'And the one after it.' },
+  { status: 'sealed', number: '002', note: 'The next room.' },
+  { status: 'sealed', number: '003', note: 'The one after it.' },
+  { status: 'sealed', number: '004', note: 'Not yet.' },
+  { status: 'sealed', number: '005', note: 'Nor this one.' },
 ];
 
 export const OPEN_ROOMS = CATALOGUE.filter((room): room is OpenRoom => room.status === 'open');

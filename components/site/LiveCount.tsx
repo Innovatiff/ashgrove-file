@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { describeCount, readRoomCount } from '@/lib/site/stats';
+import { describeCount, roomCountOnce } from '@/lib/site/stats';
 
 /**
  * Who has gone into The Ashgrove File, and who has come out: one sentence,
@@ -12,11 +12,13 @@ export function LiveCount() {
   const [line, setLine] = useState<string | null>(null);
 
   useEffect(() => {
-    const controller = new AbortController();
-    void readRoomCount(controller.signal).then((count) => {
-      if (count && !controller.signal.aborted) setLine(describeCount(count));
+    let gone = false;
+    void roomCountOnce().then((count) => {
+      if (count && !gone) setLine(describeCount(count));
     });
-    return () => controller.abort();
+    return () => {
+      gone = true;
+    };
   }, []);
 
   return (

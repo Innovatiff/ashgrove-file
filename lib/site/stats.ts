@@ -49,6 +49,14 @@ export async function readRoomCount(signal?: AbortSignal): Promise<RoomCount | n
   }
 }
 
+let once: Promise<RoomCount | null> | undefined;
+
+/** The same counters, asked for once however many parts of the page show them. */
+export function roomCountOnce(): Promise<RoomCount | null> {
+  once ??= readRoomCount();
+  return once;
+}
+
 const number = new Intl.NumberFormat('en-GB');
 
 /** One plain sentence about who has been in, and who has come out. */

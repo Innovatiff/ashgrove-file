@@ -2,7 +2,8 @@ import { SealShapes } from '@/components/site/Seal';
 import { ASHGROVE } from '@/lib/site/catalogue';
 
 /**
- * The corridor: five doors on one floor line, no two the same shape.
+ * The corridor: five doors on a tiled floor, a lamp between each pair, and no
+ * two doors the same shape.
  *
  * The first stands ajar. What is inside it is dark, with one small flame, and
  * its light lies on the floor in the only colour on the page that is not this
@@ -36,6 +37,14 @@ export function Corridor() {
   return (
     <figure className="corridor">
       <svg viewBox="0 0 1240 420" preserveAspectRatio="xMinYMax slice" focusable="false">
+        <defs>
+          <pattern id="corridor-tiles" width="60" height="60" patternUnits="userSpaceOnUse" y="360">
+            <rect width="30" height="30" className="dr-tile" />
+            <rect x="30" y="30" width="30" height="30" className="dr-tile" />
+          </pattern>
+        </defs>
+        {/* the floor, under everything */}
+        <rect x="0" y="360" width="1240" height="60" fill="url(#corridor-tiles)" aria-hidden="true" />
         {/* ------------------------------------------------ 001, standing open */}
         {/* A plain anchor on purpose: this is inside an SVG, and the room has
             its own layout, so going there is a full page load either way. */}
@@ -52,6 +61,15 @@ export function Corridor() {
         </a>
 
         <g aria-hidden="true">
+          {/* --------------------------------------- a lamp between each pair */}
+          {[270, 488, 770, 1058].map((x) => (
+            <g key={x}>
+              <rect x={x - 3} y="150" width="6" height="18" className="dr-brass" />
+              <path d={`M${x - 14} 150 ${x - 9} 126H${x + 9}L${x + 14} 150Z`} className="dr-card" />
+              <path d={`M${x - 8} 168H${x + 8}`} className="dr-line" />
+            </g>
+          ))}
+
           {/* ------------------------------------------ 002, arched and planked */}
           <path d="M310 360V170A70 70 0 0 1 450 170V360Z" className="corridor__leaf" />
           <path d="M322 360V170A58 58 0 0 1 438 170V360" className="corridor__thin" />

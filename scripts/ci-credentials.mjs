@@ -61,7 +61,11 @@ function serviceAccount() {
 
   const account = readServiceAccount(read.value);
   if (!account.ok) {
-    report.problem(`The secret FIREBASE_SERVICE_ACCOUNT can be read, but ${account.reason} ${README}`, facts(raw, 'key'));
+    report.problem(`The secret FIREBASE_SERVICE_ACCOUNT can be read, but ${account.reason} ${README}`, [
+      ...facts(raw, 'key'),
+      `  it became readable after: ${read.repair ?? 'no repair at all'}`,
+      ...(account.facts ?? []).map((line) => `  ${line}`),
+    ]);
     return;
   }
   const key = account.key;
@@ -83,8 +87,9 @@ function serviceAccount() {
 
   report.ok(`FIREBASE_SERVICE_ACCOUNT is a service account key for the project ${key.project_id}.`);
   output('key');
-  if (read.repair) {
-    report.note(`The key had been damaged in the copy and was repaired (${read.repair}). There is nothing to do.`);
+  const repairs = [read.repair, account.repair].filter(Boolean);
+  if (repairs.length > 0) {
+    report.note(`The key had been damaged in the copy and was repaired: ${repairs.join(', ')}. It is proven to be a working key. There is nothing to do.`);
   }
   if (key.client_email.startsWith('firebase-adminsdk-')) {
     report.warning(

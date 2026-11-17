@@ -54,8 +54,11 @@ function accepted(raw: string) {
   assert.equal(account.key.project_id, KEY.project_id);
   assert.equal(account.key.private_key_id, KEY.private_key_id);
   assert.ok(der(account.key.private_key).equals(der(PEM)), 'the private key should be the same key');
-  return read.repair;
+  return [read.repair, account.repair].filter(Boolean).join(', ') || null;
 }
+
+/** What is left of a key file when every backslash in it has been stripped. */
+const withoutBackslashes = (text: string) => text.split(String.fromCharCode(92)).join('');
 
 /** Reads a pasted key and returns why it was turned away. */
 function refused(raw: string): string {
@@ -124,6 +127,35 @@ describe('reading a pasted service account key', () => {
     assert.match(accepted(JSON.stringify(JSON.stringify(KEY))) ?? '', /quoted twice/);
   });
 
+  it('puts back line breaks that lost their backslashes', () => {
+    const stripped = withoutBackslashes(FILE);
+    assert.equal(FILE.length - stripped.length, 28, 'a key file has 28 line breaks written as backslash-n');
+    assert.match(accepted(stripped) ?? '', /lost their backslashes/);
+    // The copy that reached the first real run: stripped, and broken up by a terminal 153 columns wide.
+    assert.match(accepted(wrapped(stripped, 153)) ?? '', /rejoined.*lost their backslashes/);
+    assert.match(accepted(`$ cat key.json\n${wrapped(stripped, 80, true)}\n$ `) ?? '', /extra text.*rejoined.*lost their backslashes/);
+  });
+
+  it('puts them back in a key that writes its padding as an escape', () => {
+    // Find a throwaway key whose text ends in "=", then write it the way some key files do.
+    let pem = PEM;
+    for (let tries = 0; !/=\n-----END/.test(pem) && tries < 40; tries += 1) {
+      pem = generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
+    }
+    assert.match(pem, /=\n-----END/, 'no padded key turned up');
+    const escape = `${String.fromCharCode(92)}u003d`;
+    const file = JSON.stringify({ ...KEY, private_key: pem }, null, 2).split('=').join(escape);
+    assert.ok(file.includes(escape));
+
+    for (const raw of [file, withoutBackslashes(file), wrapped(withoutBackslashes(file), 153)]) {
+      const read = readJsonSecret(raw, { forgiving: true });
+      assert.ok(read.ok);
+      const account = readServiceAccount(read.value);
+      assert.ok(account.ok, account.ok ? '' : account.reason);
+      assert.ok(der(account.key.private_key).equals(der(pem)));
+    }
+  });
+
   it('adds a brace the selection missed', () => {
     const noClose = FILE.slice(0, FILE.lastIndexOf('}'));
     const noOpen = FILE.slice(FILE.indexOf('{') + 1);
@@ -159,6 +191,26 @@ describe('turning away what is not a usable key', () => {
     const changed = { ...KEY, private_key: PEM.replace(BODY.slice(140, 160), `${BODY.slice(140, 150)}${swap}${BODY.slice(151, 160)}`) };
     assert.notEqual(changed.private_key, PEM);
     assert.match(refused(JSON.stringify(changed)), /private key inside it is damaged/);
+  });
+
+  it('refuses a key that lost its backslashes and something more', () => {
+    const stripped = withoutBackslashes(FILE);
+    const at = stripped.indexOf(BODY.slice(300, 310));
+    assert.ok(at > 0);
+    const reason = refused(stripped.slice(0, at) + stripped.slice(at + 1));
+    assert.match(reason, /private key inside it is damaged/);
+  });
+
+  it('counts what is wrong with a private key, and shows none of it', () => {
+    const read = readJsonSecret(withoutBackslashes(FILE).replace(BODY.slice(300, 302), ''), { forgiving: true });
+    assert.ok(read.ok);
+    const account = readServiceAccount(read.value);
+    assert.ok(!account.ok);
+    const facts = (account.facts ?? []).join('\n');
+    assert.match(facts, /line breaks in it: 0, and 0 more still written out as backslash-n/);
+    assert.match(facts, /key material between its markers: 1649 characters/);
+    for (let from = 0; from + 24 <= BODY.length; from += 24) assert.ok(!facts.includes(BODY.slice(from, from + 24)));
+    assert.doesNotMatch(facts, /[{}[\]]/);
   });
 
   it('refuses a key with a part missing', () => {

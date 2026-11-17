@@ -115,23 +115,6 @@ export function readJsonSecret(raw, { forgiving = false } = {}) {
   return { ok: false };
 }
 
-/**
- * Rebuilds a PEM private key from whatever damage its layout has taken.
- * @param {unknown} value
- * @returns {string | null}
- */
-export function normalisePem(value) {
-  if (typeof value !== 'string') return null;
-  const text = value.replace(/\\n/g, '\n');
-  const match = /BEGIN\s*((?:RSA\s*)?)PRIVATE\s*KEY([\s\S]*?)END\s*(?:RSA\s*)?PRIVATE\s*KEY/.exec(text);
-  if (!match) return null;
-  const body = (match[2] ?? '').replace(/[^A-Za-z0-9+/=]/g, '');
-  if (body.length === 0) return null;
-  const label = match[1] ? 'RSA PRIVATE KEY' : 'PRIVATE KEY';
-  const lines = body.match(/.{1,64}/g) ?? [];
-  return `-----BEGIN ${label}-----\n${lines.join('\n')}\n-----END ${label}-----\n`;
-}
-
 /** True when the key signs something its own public half accepts. */
 function keyWorks(pem) {
   try {
@@ -141,6 +124,83 @@ function keyWorks(pem) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Undoes what a lost backslash does to a key. Inside the file every line
+ * break of the key is written as backslash-n. Strip the backslashes and each
+ * one leaves a bare "n" behind: one before the first line, one after every
+ * line of 64. "n" is also a letter a key uses, so only the ones standing in
+ * exactly those places are taken out.
+ */
+function withoutLostBreaks(material) {
+  if (material[0] !== 'n') return null;
+  let rest = material.slice(1);
+  let body = '';
+  while (rest.length > 65) {
+    if (rest[64] !== 'n') return null;
+    body += rest.slice(0, 64);
+    rest = rest.slice(65);
+  }
+  return rest.endsWith('n') ? body + rest.slice(0, -1) : null;
+}
+
+/** The key material between the markers of a private key, and its label. */
+function keyMaterial(value) {
+  if (typeof value !== 'string') return null;
+  const text = value.replace(/\\n/g, '\n');
+  const match = /BEGIN\s*((?:RSA\s*)?)PRIVATE\s*KEY([\s\S]*?)END\s*(?:RSA\s*)?PRIVATE\s*KEY/.exec(text);
+  if (!match) return null;
+  return { label: match[1] ? 'RSA PRIVATE KEY' : 'PRIVATE KEY', material: (match[2] ?? '').replace(/[^A-Za-z0-9+/=]/g, '') };
+}
+
+/**
+ * Rebuilds a private key from whatever damage its layout has taken, and
+ * proves the result by signing with it. A wrong guess cannot pass that.
+ *
+ * @param {unknown} value The "private_key" of a key file.
+ * @returns {{ pem: string, repair: string | null } | null}
+ */
+export function readPrivateKey(value) {
+  const found = keyMaterial(value);
+  if (!found || found.material.length === 0) return null;
+  const { label, material } = found;
+
+  // Some key files write "=" as the escape u003d. Without its backslash that
+  // is five stray characters at the very end.
+  const padded = material.replace(/(?:u003d)+(?=n$)/, (run) => '='.repeat(run.length / 5));
+  const lostBackslashes = 'put back the line breaks of the private key, which had lost their backslashes';
+  const readings = [
+    [null, material],
+    [lostBackslashes, withoutLostBreaks(material)],
+    [lostBackslashes, withoutLostBreaks(padded)],
+  ];
+
+  for (const [repair, body] of readings) {
+    if (!body) continue;
+    const pem = `-----BEGIN ${label}-----\n${(body.match(/.{1,64}/g) ?? []).join('\n')}\n-----END ${label}-----\n`;
+    if (keyWorks(pem)) return { pem, repair };
+  }
+  return null;
+}
+
+/**
+ * Counts about a private key that would not read. Safe to print.
+ * @param {unknown} value The "private_key" of a key file.
+ * @returns {string[]}
+ */
+export function describePrivateKey(value) {
+  if (typeof value !== 'string') return ['the private key is not text'];
+  const found = keyMaterial(value);
+  const real = (value.match(/\n/g) ?? []).length;
+  const written = (value.match(/\\n/g) ?? []).length;
+  return [
+    `the private key is ${value.length} characters long. In a key file it is 1,704`,
+    `line breaks in it: ${real}, and ${written} more still written out as backslash-n. A key has 28 and 0`,
+    found
+      ? `key material between its markers: ${found.material.length} characters. A key has 1,624`
+      : 'its BEGIN and END markers could not be found',
+  ];
 }
 
 /** Names what a JSON object is, when it is something other than a key. */
@@ -168,7 +228,7 @@ function recognise(value) {
  * returns it with its private key laid out the standard way.
  *
  * @param {Record<string, unknown>} value
- * @returns {{ ok: true, key: Record<string, any> } | { ok: false, reason: string }}
+ * @returns {{ ok: true, key: Record<string, any>, repair: string | null } | { ok: false, reason: string, facts?: string[] }}
  */
 export function readServiceAccount(value) {
   // No field of a key file has a space in it. Any that turn up came from the copy.
@@ -188,15 +248,16 @@ export function readServiceAccount(value) {
     return { ok: false, reason: 'the account name inside it ("client_email") is damaged. Part of the file was changed in the copy.' };
   }
 
-  const pem = normalisePem(key.private_key);
-  if (!pem || !keyWorks(pem)) {
+  const privateKey = readPrivateKey(key.private_key);
+  if (!privateKey) {
     return {
       ok: false,
       reason: 'the private key inside it is damaged: characters were lost or changed in the copy. It cannot be repaired. Create a new key and save that one.',
+      facts: describePrivateKey(key.private_key),
     };
   }
 
-  return { ok: true, key: { ...key, private_key: pem } };
+  return { ok: true, key: { ...key, private_key: privateKey.pem }, repair: privateKey.repair };
 }
 
 /**

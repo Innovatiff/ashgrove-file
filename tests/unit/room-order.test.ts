@@ -54,9 +54,9 @@ describe('room order', () => {
   });
 
   it('routes each gate to what comes after it', () => {
-    assert.equal(routeAfter(THRESHOLD), '/oath');
-    assert.equal(routeAfter('study'), '/file/coroner');
-    assert.equal(routeAfter(ROOM_ORDER[ROOM_ORDER.length - 1] as (typeof ROOM_ORDER)[number]), '/verdict');
+    assert.equal(routeAfter(THRESHOLD), '/ashgrove/oath');
+    assert.equal(routeAfter('study'), '/ashgrove/file/coroner');
+    assert.equal(routeAfter(ROOM_ORDER[ROOM_ORDER.length - 1] as (typeof ROOM_ORDER)[number]), '/ashgrove/verdict');
     assert.equal(nextRoom('study'), 'coroner');
   });
 

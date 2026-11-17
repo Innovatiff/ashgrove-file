@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useProgress } from '@/components/providers/ProgressProvider';
 import { cx } from '@/lib/format';
+import { THRESHOLD_ROUTE } from '@/lib/rooms';
 
 function Slash() {
   return (
@@ -23,7 +24,7 @@ export function FileLabel({ className }: { className?: string }) {
   return (
     <p className={cx('mono run', className)}>
       <span>
-        <Link href="/">
+        <Link href={THRESHOLD_ROUTE}>
           File 001
           <Slash />
           Ashgrove

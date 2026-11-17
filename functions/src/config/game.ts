@@ -41,10 +41,17 @@ export function clearedEvidenceId(suspect: string): string {
   return `cleared-${suspect}`;
 }
 
-export const THRESHOLD_ROUTE = '/';
-export const OATH_ROUTE = '/oath';
+/**
+ * Where this escape room lives on the site. The main website owns the root
+ * address and lists the rooms. Every page of this one sits under BASE_ROUTE:
+ * the cover a visitor arrives at (the Threshold), the oath, the seven rooms
+ * and the accusation.
+ */
+export const BASE_ROUTE = '/ashgrove';
+export const THRESHOLD_ROUTE = BASE_ROUTE;
+export const OATH_ROUTE = `${BASE_ROUTE}/oath`;
 /** Where the seventh room leads: the accusation. */
-export const VERDICT_ROUTE = '/verdict';
+export const VERDICT_ROUTE = `${BASE_ROUTE}/verdict`;
 
 /** Minutes added to a player's time for hint tiers 1, 2 and 3. */
 export const HINT_PENALTY_MINUTES = [5, 10, 20] as const;
@@ -102,7 +109,7 @@ export function roomNumeral(room: RoomId): string {
 }
 
 export function routeForRoom(room: RoomId): string {
-  return `/file/${room}`;
+  return `${BASE_ROUTE}/file/${room}`;
 }
 
 /** Where a player is sent once this gate is solved. */

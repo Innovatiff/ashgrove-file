@@ -1,4 +1,12 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
+
+/* Only this room's own files are read for class names. The main website has
+   its own stylesheet (app/(site)/site.css) and never shares this one. */
+@source './';
+@source '../../components';
+@source not '../../components/site';
+@source '../../lib';
+@source not '../../lib/site';
 
 /* ==========================================================================
    THE ASHGROVE FILE
@@ -930,6 +938,25 @@
 .ledger__dot {
   margin-inline: 0.9em;
   color: var(--line-strong);
+}
+/* The way back out, to the main website this room belongs to. */
+.ledger__site {
+  border-top: 1px solid var(--line);
+}
+/* Each link is tall enough to touch (28px), whatever line it wraps onto. */
+.ledger__site a {
+  display: inline-block;
+  padding-block: 6px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 4px;
+}
+@media (hover: hover) {
+  .ledger__site a:hover {
+    color: var(--paper);
+    text-decoration-color: var(--paper);
+  }
 }
 
 /* ------------------------------------------------------------------ misc -- */

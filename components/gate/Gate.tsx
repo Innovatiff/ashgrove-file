@@ -1,11 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Clearance } from '@/components/gate/Clearance';
 import { useProgress } from '@/components/providers/ProgressProvider';
 import { roomIsOpen } from '@/lib/progress';
 import type { RoomId } from '@/lib/rooms';
+
+/** How long the gate waits for the file to catch up before it turns a visitor away. */
+const GRACE_MS = 1500;
 
 export interface GateProps {
   /**
@@ -42,10 +45,21 @@ export function Gate({ need, children }: GateProps) {
           ? progress.roomsDone
           : roomIsOpen(player, need);
 
+  // A page can be reached a moment before the news that unlocks it. The door
+  // opens when checkAnswer replies; the file on this page is a live copy that
+  // hears of it separately, and now and then the reply wins. So nobody is
+  // turned away at once: the gate waits, and lets them in if the file catches
+  // up while it does.
+  const [turnedAway, setTurnedAway] = useState(false);
   useEffect(() => {
-    if (allowed === false) router.replace(progress.resumeRoute);
+    if (allowed !== false) return;
+    const timer = window.setTimeout(() => {
+      setTurnedAway(true);
+      router.replace(progress.resumeRoute);
+    }, GRACE_MS);
+    return () => window.clearTimeout(timer);
   }, [allowed, progress.resumeRoute, router]);
 
   if (allowed === true) return <>{children}</>;
-  return <Clearance state={unreachable ? 'error' : allowed === false ? 'denied' : 'checking'} />;
+  return <Clearance state={unreachable ? 'error' : allowed === false && turnedAway ? 'denied' : 'checking'} />;
 }

@@ -5,7 +5,7 @@ import { Providers } from '@/components/providers/Providers';
 import { LedgerFooter } from '@/components/ui/LedgerFooter';
 import { SiteHeader } from '@/components/ui/SiteHeader';
 import { TabTitle } from '@/components/ui/TabTitle';
-import './globals.css';
+import './ashgrove.css';
 
 // Titles and room names.
 const fell = IM_Fell_English_SC({ weight: '400', subsets: ['latin'], variable: '--font-fell', display: 'swap' });

@@ -1,25 +1,47 @@
-# The Ashgrove File
+# Unsealed, and The Ashgrove File
 
-A browser-based murder-mystery escape room. Players enter a sealed 1949 case
-archive, solve one code per room, and finally accuse the killer.
+Two things live in this repository.
+
+**Unsealed** is the main website: the corridor that lists the escape rooms,
+with the pages around it (how it works, about, contact, privacy, terms).
+
+**The Ashgrove File** is the first escape room, File 001: a browser-based
+murder mystery. Players enter a sealed 1949 case archive, solve one code per
+room, and finally accuse the killer.
+
+![The main website](docs/screenshots/site-home.jpg)
+
+Each has its own layout, its own typefaces and its own stylesheet, and shares
+none of them with the other. The main website is daylight: bone paper, black
+ink, the red of sealing wax. A room is whatever that room is. A visitor picks
+a room on the main website, lands on that room's own front page, and goes in
+from there.
 
 ![The Threshold](docs/screenshots/threshold-hero.jpg)
 
-The whole file is here: the Threshold, the Oath, seven rooms and the
-accusation. More screenshots are in [`docs/screenshots`](docs/screenshots).
-
 | Route | What it is |
 | --- | --- |
-| `/` | The Threshold. Hero, the legend, the victim, the rules of entry, the recruitment letter and the door. |
-| `/oath` | Name, promise, badge. Optional Google link to keep the file on any device. |
-| `/file/study` | Room I, The Study. |
-| `/file/coroner` | Room II, The Coroner. |
-| `/file/herbarium` | Room III, The Herbarium. |
-| `/file/journal` | Room IV, The Journal. |
-| `/file/register` | Room V, The Register. |
-| `/file/marsh` | Room VI, The Marsh. |
-| `/file/lamp` | Room VII, The Seventh Lamp. |
-| `/verdict` | The accusation. Five photographs, the detective's own evidence, three chances to name the killer, then the closing account and a rank. |
+| `/` | **The main website.** The corridor, the catalogue of rooms, how it works, the house rules. |
+| `/how-it-works` | Start to finish, and the questions people ask. |
+| `/about` | What a room is, how they are made, what every room keeps to. |
+| `/contact` | A form. Messages go to an inbox no browser can read. |
+| `/privacy`, `/terms` | The small print. Written from what the code does. |
+| `/ashgrove` | **The Ashgrove File.** Its front page (the Threshold): hero, the legend, the victim, the rules of entry, the recruitment letter and the door. |
+| `/ashgrove/oath` | Name, promise, badge. Optional Google link to keep the file on any device. |
+| `/ashgrove/file/study` | Room I, The Study. |
+| `/ashgrove/file/coroner` | Room II, The Coroner. |
+| `/ashgrove/file/herbarium` | Room III, The Herbarium. |
+| `/ashgrove/file/journal` | Room IV, The Journal. |
+| `/ashgrove/file/register` | Room V, The Register. |
+| `/ashgrove/file/marsh` | Room VI, The Marsh. |
+| `/ashgrove/file/lamp` | Room VII, The Seventh Lamp. |
+| `/ashgrove/verdict` | The accusation. Five photographs, the detective's own evidence, three chances to name the killer, then the closing account and a rank. |
+
+The room used to live at the root, before there was a main website. Its old
+addresses (`/oath`, `/file/{room}`, `/verdict`) redirect to the new ones. Any
+other address gets one page, [`app/global-not-found.tsx`](app/global-not-found.tsx).
+
+More screenshots are in [`docs/screenshots`](docs/screenshots).
 
 ![Room II, The Coroner](docs/screenshots/room-coroner.jpg)
 
@@ -28,6 +50,85 @@ statement of the person it points at, its papers, figures, question and hints
 are read from Firestore, never from the bundle. Who did it is not in the
 browser at all.
 
+## The main website
+
+Everything about it is in three places: [`app/(site)`](<app/(site)>) (the
+pages and the stylesheet), [`components/site`](components/site) and
+[`lib/site`](lib/site).
+
+**The name.** It is written once, in [`lib/site/brand.ts`](lib/site/brand.ts).
+Change `SITE.name` there and the header, the page titles, the footer, the
+legal pages and the line at the foot of the room all follow. Then redraw the
+picture that link previews show (below).
+
+**The catalogue.** [`lib/site/catalogue.ts`](lib/site/catalogue.ts) lists the
+rooms in order. An open room has a title, a few public facts, a picture and
+the address of its own front page. A sealed room has a number and one line.
+To add a room:
+
+1. Build it under an address of its own, in its own route group with its own
+   root layout, the way `app/(ashgrove)` is. It brings its own typefaces and
+   stylesheet.
+2. Add one entry to `CATALOGUE`. Nothing else on the main website changes.
+
+Only what a room's own front page already says in public belongs in the
+catalogue. Nothing from inside a room.
+
+**The look.** Tokens are CSS variables in
+[`app/(site)/site.css`](<app/(site)/site.css>). Like the room, it is flat: no
+shadows, no blur, no gradients, and the hatching on a sealed plate is an SVG
+tile. The one mask is on a room's photograph, the way the room shows it.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--bone` | `#F2EEE6` | The page |
+| `--card` | `#FAF8F3` | Raised surfaces, fields |
+| `--ink` | `#17140F` | Text, strong rules, the dark band |
+| `--ink-2` | `#4A453C` | Secondary text |
+| `--ink-3` | `#6B6458` | Labels and notes |
+| `--rule`, `--rule-2` | `#D8D1C3`, `#B9B0A0` | Hairlines, field borders |
+| `--wax`, `--wax-deep` | `#A4241B`, `#7C170F` | The one accent: seals, the mark, emphasis, focus |
+
+Titles are Fraunces, everything else Instrument Sans. Both are downloaded at
+build time and served from the site, so a visitor's browser never asks Google
+for a font.
+
+**What it loads.** Nothing of Firebase's. No page of the main website signs a
+visitor in, sets a cookie or stores anything in the browser. The home page
+asks Firestore's REST API one anonymous question, how many have entered and
+closed The Ashgrove File ([`lib/site/stats.ts`](lib/site/stats.ts)). Firebase
+is loaded only when someone presses Send on the contact form, and a visitor is
+not given an account until they walk into a room. Links between the main
+website and a room are plain `<a>` elements on purpose: the two have separate
+layouts, so it is a full page load either way, and neither fetches anything of
+the other ahead of time.
+
+**Reading the contact form's messages.** They are in Firestore, in the
+`messages` collection: Firebase console → Firestore Database → `messages`.
+Each has `name`, `email`, `topic` (`broken`, `question`, `data` or `other`),
+`message`, `createdAt`, `status` (`new` when it arrives) and, if the sender
+has a file in a room, the `badge` and name on it. Nothing emails you when one
+arrives. No browser can read or write that collection, whoever is signed in.
+
+**The link preview picture** is `public/unsealed-og.png`. It is drawn from
+the built site, so it always matches it:
+
+```bash
+npm run build
+node scripts/make-og.mjs
+```
+
+It needs Playwright with a Chromium, which is not a dependency of this
+project. Run it after changing the name, the headline, the colours or the
+corridor drawing, and commit the picture.
+
+**The small print.** `/privacy` and `/terms` are written from what the code
+does: which service holds what, and where. If the code changes (a new field in
+a player's file, analytics on or off, a new service), change the page in the
+same commit and `LEGAL_UPDATED` in `lib/site/brand.ts` with it. They are plain
+words, not a lawyer's, and they do not name a legal entity, a postal address
+or a governing law.
+
 ## Stack
 
 - **Next.js 16** (App Router) + TypeScript + **Tailwind CSS 4**, built as a
@@ -35,8 +136,8 @@ browser at all.
   routes, no middleware.
 - **Firebase**: Hosting, Authentication, Cloud Firestore, Cloud Functions
   (2nd gen, TypeScript) and Analytics. Project id `ashgrove-file`.
-- All server logic is four callable Cloud Functions. The browser never
-  writes to Firestore.
+- All server logic is five callable Cloud Functions: four for the room, one
+  for the contact form. The browser never writes to Firestore.
 
 ## Requirements
 
@@ -195,9 +296,9 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | 70 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. |
-| `npm run test:rules` | 40 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. |
-| `npm run test:functions` | 36 tests driving `checkAnswer`, `signOath`, `takeHint` and `accuse` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, and a case that is counted once. |
+| `npm run test:unit` | 84 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. Nothing from `answers.json` is in a tracked file. |
+| `npm run test:rules` | 43 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. Nobody can read or write the contact inbox. |
+| `npm run test:functions` | 44 tests driving `checkAnswer`, `signOath`, `takeHint`, `accuse` and `sendMessage` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, a case that is counted once, and a contact form that tidies what it is sent, refuses what is wrong and stops at three messages a day. |
 | `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`. |
 | `npm run verify` | Typecheck, lint, all tests, a production build and the bundle check. |
 
@@ -364,6 +465,11 @@ browser ──reads──▶ Firestore   (firestore.rules decides what is visibl
 browser ──calls──▶ checkAnswer / signOath / takeHint / accuse   (the only writers)
 ```
 
+A page can be reached a moment before the news that unlocks it: the door opens
+when `checkAnswer` replies, and the copy of the file in the browser hears of
+it separately. So `<Gate>` waits a second and a half before it turns anyone
+away, and lets them in if the file catches up while it does.
+
 **Data model**
 
 | Path | Read by clients | Written by |
@@ -375,6 +481,8 @@ browser ──calls──▶ checkAnswer / signOath / takeHint / accuse   (the o
 | `answers/{gate}`, `answers/verdict` | Never | Seed script |
 | `badges/{badge}` | Never | `signOath` |
 | `stats/global` | Everyone | Functions only |
+| `messages/{id}` | Never | `sendMessage` |
+| `messageLimits/{key}` | Never | `sendMessage` |
 
 `players/{uid}` holds `detectiveName`, `badge`, `oathAt`,
 `solved { gate: timestamp }`, `evidence [ids]`, `hintPenalty` (minutes),
@@ -382,7 +490,10 @@ browser ──calls──▶ checkAnswer / signOath / takeHint / accuse   (the o
 `attempts { gate: { count, windowStart } }`, and for the accusation
 `accused [ids]`, `closedAt` and `rank`.
 
-Two collections go beyond the original four, both for a reason:
+`messages` is the contact form's inbox, and `messageLimits` the counters that
+keep it from being flooded. Neither belongs to the room.
+
+Two of the room's collections go beyond the original four, both for a reason:
 
 - **`evidence`**: the card a solved room awards contains the answer. Stored in
   `rooms/study` it would be readable before the room is solved, so it lives in
@@ -401,6 +512,7 @@ Two collections go beyond the original four, both for a reason:
 | `signOath({ name })` | Requires the Threshold solved. Cleans the name, assigns a unique `ASH-XXXX` badge, writes the oath, increments `stats.entered`. Signing twice changes nothing. |
 | `takeHint({ room, tier })` | Tiers in order only. Returns the hint text and adds 5, 10 or 20 minutes. Re-reading a hint already taken is free. |
 | `accuse({ suspect })` | Requires all seven rooms solved. Hashes the name and compares it with `answers/verdict.hash`. A miss costs one of three accusations and is answered only with why it was not that person. The right name stamps `closedAt`, fixes the rank, hands over the closing account and adds one to `stats.closed`, once. Never returns the right name. |
+| `sendMessage({ name, email, topic, message })` | The main website's contact form. Tidies and checks what it is sent, then writes one document to `messages/`. Three messages a day from one sender, two hundred a day from everyone, both counted in the same transaction as the write. A form field no person can see catches scripts: if it arrives filled in, the sender is thanked and nothing is stored. |
 
 **Rank.** A closed case is ranked on what it cost: the minutes its hints
 added, plus 30 for every accusation that missed. Nothing: Warden-Breaker. Up
@@ -408,9 +520,9 @@ to 15: Chief Inspector. Up to 60: Inspector. Up to 120: Sergeant. More:
 Constable. The time on file is recorded beside the rank and does not change
 it, so a detective who sleeps on a room is not marked down for sleeping.
 
-## The design system
+## The room's design system
 
-Tokens are CSS variables in [`app/globals.css`](app/globals.css), mirrored into
+Tokens are CSS variables in [`app/(ashgrove)/ashgrove.css`](<app/(ashgrove)/ashgrove.css>), mirrored into
 the Tailwind theme. The default Tailwind palette, shadows and blurs are
 removed, so the nine tokens are the only colours a utility class can reach.
 
@@ -508,16 +620,28 @@ npm run images -- --only {name}
 
 ```
 app/
-  layout.tsx                 fonts, metadata, header, ledger, providers
-  globals.css                tokens and every primitive
-  page.tsx                   the Threshold
-  oath/page.tsx              the Oath
-  file/{room}/page.tsx       Rooms I to VII: study, coroner, herbarium,
+  (site)/                    THE MAIN WEBSITE
+    layout.tsx               its own root layout: typefaces, metadata, header, footer
+    site.css                 its tokens and every primitive
+    page.tsx                 home: the corridor, the catalogue, how it works
+    how-it-works/  about/  contact/  privacy/  terms/
+  (ashgrove)/                THE ASHGROVE FILE
+    layout.tsx               its own root layout: typefaces, metadata, header,
+                             ledger, providers
+    ashgrove.css             its tokens and every primitive
+    ashgrove/page.tsx        the Threshold, the room's front page
+    ashgrove/oath/page.tsx   the Oath
+    ashgrove/file/{room}/page.tsx   Rooms I to VII: study, coroner, herbarium,
                              journal, register, marsh, lamp
-  verdict/page.tsx           the accusation
-  not-found.tsx
+    ashgrove/verdict/page.tsx       the accusation
+    ashgrove/icon.svg        the room's own tab icon
+  global-not-found.tsx       the one 404 page, for any address on the site
+  robots.ts  sitemap.ts
 components/
-  index.ts                   everything exposed for later rooms
+  site/                      the main website: Masthead, Colophon, Corridor
+                             (the drawing), Seal, RoomPlate, LiveCount,
+                             PageHead, Clauses, ContactForm, Arrow
+  index.ts                   everything the room exposes for later rooms
   ui/                        Frame, DoubleRule, Section, FileLabel, BlendImage,
                              PinnedPhoto, Reveal, EvidenceCard, Redaction,
                              CodeInput, HintPanel, LedgerFooter, SiteHeader,
@@ -533,16 +657,21 @@ components/
                              useEvidence
   verdict/                   Verdict (the wall, the name, the closed case)
 lib/
+  site/                      the main website: brand (the name, the menu),
+                             catalogue (the rooms), stats (the public count),
+                             contact (the form's checks and its one call),
+                             fonts, fonts-404
   firebase.ts                one initialisation; analytics after isSupported()
-  api.ts                     the four callables, as the browser calls them
+  api.ts                     the room's four callables, as the browser calls them
   progress.ts                players/{uid} read into what the interface needs
   rooms.ts                   room order and routes (ids only)
   clock.ts  format.ts  content.ts  public-images.generated.ts
 functions/
   src/index.ts
-  src/handlers/              checkAnswer, signOath, takeHint, accuse
+  src/handlers/              checkAnswer, signOath, takeHint, accuse, sendMessage
   src/lib/                   answers (normalise + hash), player, validate, options
-  src/config/                game.ts (room order, limits, ranks), region.ts
+  src/config/                game.ts (room order, routes, limits, ranks),
+                             contact.ts (the form's limits), region.ts
 scripts/
   seed.ts                    answers, evidence, rooms, the accusation, stats
   seal-answers.mjs           seals answers.json for the deploy key
@@ -552,6 +681,7 @@ scripts/
                              google-preflight, ci-report
   check-bundle.ts            fails if anything secret is in /out
   process-images.mjs         sources to 2400px WebP
+  make-og.mjs                draws the main website's link preview picture
   content/                   rooms.ts (the seven rooms and the wall), answers.ts
                              (reads answers.json), types.ts, images.generated.json
 tests/
@@ -559,7 +689,8 @@ tests/
 docs/
   image-prompts.md
   screenshots/
-public/images/               fifteen .webp files
+public/images/               the room's fifteen .webp files
+public/unsealed*.{svg,png}   the main website's icon and link preview picture
 .github/workflows/
   deploy.yml                 deploy to Firebase from the Actions tab
   check.yml                  check the secrets and the project, deploy nothing
@@ -589,7 +720,14 @@ answers.sealed.json          answers.json, sealed for the deploy key
 - **Functions run in `northamerica-northeast1`,** because that is where this
   project's Firestore database is. The region is one constant,
   `functions/src/config/region.ts`, and the web app reads the same one.
-- **First load is about 390 KB of JavaScript, gzipped,** roughly half of it the
+- **Each stylesheet reads only its own files.** `site.css` and `ashgrove.css`
+  both start with `@import 'tailwindcss' source(none)` and then name the
+  folders they belong to. A class used in a new folder produces no CSS until
+  that folder is added to the right list.
+- **The 404 page has its own copies of the typefaces,**
+  `lib/site/fonts-404.ts`, with preloading off. It belongs to the whole site,
+  so anything it preloads is preloaded by every page, the rooms included.
+- **The room's first load is about 390 KB of JavaScript, gzipped,** roughly half of it the
   Firebase SDK. The pages are prerendered, so content paints without it.
   Loading Firebase after first paint is the obvious next optimisation.
 - **Before a public launch**, turn on App Check for the functions and restrict

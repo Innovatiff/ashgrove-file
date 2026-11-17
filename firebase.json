@@ -32,6 +32,23 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/oath",
+        "destination": "/ashgrove/oath",
+        "type": 302
+      },
+      {
+        "source": "/verdict",
+        "destination": "/ashgrove/verdict",
+        "type": 302
+      },
+      {
+        "source": "/file/:room",
+        "destination": "/ashgrove/file/:room",
+        "type": 302
+      }
+    ],
     "headers": [
       {
         "source": "/_next/static/**",

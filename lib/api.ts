@@ -1,6 +1,7 @@
 import { signInAnonymously } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { firebase } from '@/lib/firebase';
+import { withoutStatus } from '@/lib/format';
 import type { GateId, RoomId } from '@/lib/rooms';
 
 /**
@@ -92,7 +93,7 @@ const OFFLINE = 'The archive is not answering. Check your connection and try aga
 export function describeFailure(error: unknown): Failure {
   const failure = error as { code?: string; message?: string; details?: unknown };
   const code = failure?.code ?? '';
-  const message = typeof failure?.message === 'string' ? failure.message : '';
+  const message = typeof failure?.message === 'string' ? withoutStatus(failure.message) : '';
 
   if (code === 'functions/resource-exhausted') {
     const wait = (failure.details as { retryAfterSeconds?: number } | undefined)?.retryAfterSeconds;

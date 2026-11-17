@@ -1,5 +1,0 @@
-# The cover of the file is public. The rooms are not for indexing.
-User-agent: *
-Allow: /
-Disallow: /oath
-Disallow: /file/

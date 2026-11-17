@@ -25,3 +25,11 @@ export function ledgerCount(n: number): string {
 export function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ');
 }
+
+/**
+ * The sentence a Cloud Function wrote for the person at the screen, without
+ * the HTTP status the Firebase SDK appends to it ("Too many guesses. [429]").
+ */
+export function withoutStatus(message: string): string {
+  return message.replace(/\s*\[\d{3}\]\s*$/, '');
+}

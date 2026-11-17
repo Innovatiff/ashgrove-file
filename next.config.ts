@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
   // /oath is emitted as oath.html and served at /oath by Hosting's cleanUrls.
   trailingSlash: false,
   reactStrictMode: true,
+  experimental: {
+    // The main website and each escape room have their own root layout, so
+    // there is no single layout to build a 404 from. app/global-not-found.tsx
+    // is the one page every unmatched address gets.
+    globalNotFound: true,
+  },
 };
 
 export default nextConfig;

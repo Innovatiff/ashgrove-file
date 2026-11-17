@@ -1,12 +1,16 @@
 import { initializeApp } from 'firebase-admin/app';
 
-// All server logic for The Ashgrove File. The web app is a static export with
-// no server of its own: these four callables are the only code that can
-// write a player's progress or see an answer.
+// All server logic. The web app is a static export with no server of its
+// own.
+//
+// The Ashgrove File has four callables, and they are the only code that can
+// write a player's progress or see an answer. The main website has one: the
+// contact form.
 
 initializeApp();
 
 export { accuse } from './handlers/accuse';
 export { checkAnswer } from './handlers/checkAnswer';
+export { sendMessage } from './handlers/sendMessage';
 export { signOath } from './handlers/signOath';
 export { takeHint } from './handlers/takeHint';

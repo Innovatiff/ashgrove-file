@@ -10,6 +10,7 @@
 import { type RoomId, routeForRoom } from '@/functions/src/config/game';
 
 export {
+  BASE_ROUTE,
   clearedEvidenceId,
   HINT_PENALTY_MINUTES,
   HINT_TIERS,

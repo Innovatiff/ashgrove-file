@@ -1,6 +1,7 @@
 name: Deploy to Firebase
 
-# Deploys The Ashgrove File to the Firebase project named in .firebaserc.
+# Deploys the whole site, the main website and The Ashgrove File, to the
+# Firebase project named in .firebaserc.
 #
 # It runs only when someone starts it:
 #   Actions tab -> Deploy to Firebase -> Run workflow

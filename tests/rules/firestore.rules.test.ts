@@ -24,6 +24,7 @@ import {
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import {
+  addDoc,
   arrayUnion,
   collection,
   deleteDoc,
@@ -147,6 +148,8 @@ beforeEach(async () => {
     await setDoc(doc(db, 'evidence', 'cleared-suspect-c'), { title: 'Cleared', body: 'Not them either.' });
     await setDoc(doc(db, 'badges', 'ASH-0417'), { uid: 'sworn' });
     await setDoc(doc(db, 'stats', 'global'), { entered: 2, closed: 0 });
+    await setDoc(doc(db, 'messages', 'from-sworn'), { uid: 'sworn', name: 'A sender', email: 'a@example.com', message: 'Hello.' });
+    await setDoc(doc(db, 'messageLimits', 'sender-sworn'), { count: 3 });
   });
 });
 
@@ -368,5 +371,28 @@ describe('everything else', () => {
     await assertFails(setDoc(doc(as('sworn'), 'badges', 'ASH-9999'), { uid: 'sworn' }));
     await assertFails(getDoc(doc(as('sworn'), 'secrets', 'anything')));
     await assertFails(setDoc(doc(as('sworn'), 'secrets', 'anything'), { a: 1 }));
+  });
+});
+
+describe('the contact form', () => {
+  it('lets nobody read the inbox, not even the one who wrote the message', async () => {
+    await assertFails(getDoc(doc(as('sworn'), 'messages', 'from-sworn')));
+    await assertFails(getDoc(doc(as('stranger'), 'messages', 'from-sworn')));
+    await assertFails(getDoc(doc(anonymous(), 'messages', 'from-sworn')));
+    await assertFails(getDocs(collection(as('sworn'), 'messages')));
+    await assertFails(getDocs(collection(anonymous(), 'messages')));
+  });
+
+  it('lets nobody write to the inbox except through the function', async () => {
+    await assertFails(addDoc(collection(as('sworn'), 'messages'), { name: 'Forged', message: 'Straight in.' }));
+    await assertFails(addDoc(collection(anonymous(), 'messages'), { name: 'Forged', message: 'Straight in.' }));
+    await assertFails(updateDoc(doc(as('sworn'), 'messages', 'from-sworn'), { status: 'answered' }));
+    await assertFails(deleteDoc(doc(as('sworn'), 'messages', 'from-sworn')));
+  });
+
+  it('lets nobody read or reset the limits', async () => {
+    await assertFails(getDoc(doc(as('sworn'), 'messageLimits', 'sender-sworn')));
+    await assertFails(setDoc(doc(as('sworn'), 'messageLimits', 'sender-sworn'), { count: 0 }));
+    await assertFails(deleteDoc(doc(as('sworn'), 'messageLimits', 'sender-sworn')));
   });
 });

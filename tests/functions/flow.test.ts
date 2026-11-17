@@ -176,7 +176,7 @@ describe('checkAnswer', () => {
   it('opens the door on the right word, however it is typed', async () => {
     const v = await visitor();
     const result = await v.call('checkAnswer', { room: 'threshold', answer: '  Lan-tern. ' });
-    assert.deepEqual(result, { correct: true, triesLeft: 9, next: '/oath', evidence: [] });
+    assert.deepEqual(result, { correct: true, triesLeft: 9, next: '/ashgrove/oath', evidence: [] });
     assert.ok((await player(v.uid)).solved.threshold);
   });
 
@@ -202,7 +202,7 @@ describe('checkAnswer', () => {
     assert.deepEqual(result, {
       correct: true,
       triesLeft: 8,
-      next: '/file/coroner',
+      next: '/ashgrove/file/coroner',
       evidence: ['study-time-of-death'],
     });
 
@@ -278,7 +278,7 @@ describe('signOath', () => {
     );
     assert.match(signed.badge, /^ASH-\d{4}$/);
     assert.equal(signed.detectiveName, 'Ada Marsh');
-    assert.equal(signed.next, '/file/study');
+    assert.equal(signed.next, '/ashgrove/file/study');
     assert.equal(signed.alreadySigned, false);
 
     const file = await player(v.uid);
@@ -417,7 +417,7 @@ describe('checkAnswer, when a room accepts more than one way of writing its answ
       await d.call('checkAnswer', { room: 'study', answer: STUDY });
       const result = await d.call<{ correct: boolean; next?: string }>('checkAnswer', { room: 'coroner', answer });
       assert.equal(result.correct, true, `"${answer}" should open the room`);
-      assert.equal(result.next, '/file/herbarium');
+      assert.equal(result.next, '/ashgrove/file/herbarium');
     }
   });
 
@@ -435,7 +435,7 @@ describe('checkAnswer, when a room accepts more than one way of writing its answ
     for (const [room, answers] of Object.entries(LATER)) {
       last = await d.call<{ next?: string }>('checkAnswer', { room, answer: answers[0] });
     }
-    assert.equal(last.next, '/verdict');
+    assert.equal(last.next, '/ashgrove/verdict');
   });
 });
 

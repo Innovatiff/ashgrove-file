@@ -8,6 +8,7 @@ import type { GlobalStats } from '@/lib/content';
 import { firebase } from '@/lib/firebase';
 import { elapsed, ledgerCount } from '@/lib/format';
 import { ROOM_COUNT } from '@/lib/rooms';
+import { SITE, SITE_HOME, WAY_OUT } from '@/lib/site/brand';
 
 function Dot() {
   return (
@@ -51,6 +52,10 @@ function useGlobalStats(): GlobalStats | null {
  *
  * The first line is this detective's own file. The second is everyone's,
  * and moves whenever anyone, anywhere, signs the oath or closes the case.
+ *
+ * Under the ledger, one quiet line leads back out: to the main website this
+ * room belongs to, its other rooms and its small print. Those pages have a
+ * layout of their own, so each of these links is a full page load.
  */
 export function LedgerFooter() {
   const { progress } = useProgress();
@@ -85,6 +90,23 @@ export function LedgerFooter() {
           <span>Cases closed {stats ? ledgerCount(stats.closed) : '----'}</span>
         </p>
       </div>
+
+      {/* Plain anchors: the main website has a layout of its own, so these
+          are full page loads, and nothing of it is fetched until one is used. */}
+      <nav className="ledger__site" aria-label={SITE.name}>
+        <p className="measure mono muted run py-1.5" data-testid="site-line">
+          <span>
+            A room on <a href={SITE_HOME}>{SITE.name}</a>
+            <Dot />
+          </span>
+          {WAY_OUT.map((item, index) => (
+            <span key={item.href}>
+              <a href={item.href}>{item.label}</a>
+              {index < WAY_OUT.length - 1 ? <Dot /> : null}
+            </span>
+          ))}
+        </p>
+      </nav>
     </footer>
   );
 }

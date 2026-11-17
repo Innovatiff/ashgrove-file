@@ -1,0 +1,884 @@
+@import 'tailwindcss' source(none);
+
+/* Only the main website's own files are read for class names. The escape
+   rooms have their own stylesheets and never share this one. */
+@source './';
+@source '../global-not-found.tsx';
+@source '../../components/site';
+@source '../../lib/site';
+
+/* ==========================================================================
+   UNSEALED
+   The main website: the corridor the escape rooms open off.
+
+   It is deliberately not any one room. Each room brings its own colours and
+   its own type; this page is the plain daylight outside them. Bone paper,
+   black ink, and one colour of its own: the red of sealing wax.
+
+   Everything is flat. No shadows, no blur, no gradients. The one exception is
+   the mask that dissolves a room's photograph into that room's own darkness
+   (.plate__image), which is how the room itself shows it.
+   ========================================================================== */
+
+:root {
+  --bone: #f2eee6; /* the page */
+  --card: #faf8f3; /* raised surfaces */
+  --ink: #17140f; /* text, strong rules, the dark band */
+  --ink-2: #4a453c; /* secondary text */
+  --ink-3: #6b6458; /* labels, notes */
+  --rule: #d8d1c3; /* hairlines */
+  --rule-2: #b9b0a0; /* field borders, quiet outlines */
+  --ink-rule: #3b362d; /* hairlines on the dark band */
+  --wax: #a4241b; /* the one accent: seals, links, the mark */
+  --wax-deep: #7c170f; /* pressed and hovered wax */
+
+  /* A room's own colours, used only inside that room's plate and door. */
+  --night: #050505;
+  --night-paper: #c9c5bd;
+  --ember: #ff6a1a;
+
+  --wrap: 1240px;
+  --pad: clamp(20px, 5vw, 64px);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-bone: var(--bone);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-2: var(--rule-2);
+  --color-ink-rule: var(--ink-rule);
+  --color-wax: var(--wax);
+  --color-wax-deep: var(--wax-deep);
+  --color-night: var(--night);
+  --color-ember: var(--ember);
+
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --blur-*: initial;
+
+  --font-display: var(--font-fraunces), 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-fell: var(--font-fell-sc), 'IM Fell English SC', 'Iowan Old Style', Georgia, serif;
+}
+
+/* ------------------------------------------------------------------ base -- */
+
+@layer base {
+  html {
+    background: var(--bone);
+    color: var(--ink);
+    color-scheme: light;
+    scrollbar-color: var(--rule-2) var(--bone);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--wax);
+    color: var(--bone);
+  }
+
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--wax);
+    outline-offset: 3px;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 400;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Anchored sections stop a little below the top of the window. */
+  [id] {
+    scroll-margin-top: 24px;
+  }
+}
+
+/* ---------------------------------------------------------------- layout -- */
+
+.wrap {
+  width: 100%;
+  max-width: calc(var(--wrap) + 2 * var(--pad));
+  margin-inline: auto;
+  padding-inline: var(--pad);
+}
+
+/* A full-width section, ruled off from the one above it. */
+.band {
+  border-top: 1px solid var(--rule);
+  padding-block: clamp(64px, 9vw, 128px);
+}
+.band--flush {
+  border-top: 0;
+}
+.band--ink {
+  border-top-color: var(--ink);
+  background: var(--ink);
+  color: var(--bone);
+}
+
+/* A heading in the margin, the matter beside it. One column on a phone. */
+.split {
+  display: grid;
+  gap: 32px 48px;
+}
+@media (min-width: 64rem) {
+  .split {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+  }
+  .split__aside {
+    position: sticky;
+    top: 32px;
+    align-self: start;
+  }
+}
+
+/* ------------------------------------------------------------------ type -- */
+
+/* The small label: a number, a status, the name of a section. */
+.label {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.band--ink .label {
+  color: var(--rule-2);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 420;
+  letter-spacing: -0.025em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+.display em {
+  font-style: italic;
+  font-weight: 380;
+  color: var(--wax);
+}
+.band--ink .display em {
+  color: inherit;
+}
+.display--1 {
+  font-size: clamp(2.9rem, 9.4vw, 8.25rem);
+  line-height: 0.94;
+}
+.display--2 {
+  font-size: clamp(2.25rem, 5.4vw, 4.5rem);
+}
+.display--3 {
+  font-size: clamp(1.75rem, 2.9vw, 2.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.018em;
+}
+.display--4 {
+  font-size: clamp(1.375rem, 1.9vw, 1.625rem);
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+}
+
+.lede {
+  max-width: 36em;
+  font-size: clamp(1.125rem, 1.55vw, 1.375rem);
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.band--ink .lede {
+  color: var(--rule);
+}
+
+.quiet {
+  color: var(--ink-3);
+}
+.band--ink .quiet {
+  color: var(--rule-2);
+}
+
+.textlink {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--rule-2);
+  text-underline-offset: 0.22em;
+}
+@media (hover: hover) {
+  .textlink:hover {
+    color: var(--wax);
+    text-decoration-color: var(--wax);
+  }
+}
+.band--ink .textlink {
+  text-decoration-color: var(--ink-3);
+}
+@media (hover: hover) {
+  .band--ink .textlink:hover {
+    color: var(--bone);
+    text-decoration-color: var(--bone);
+  }
+}
+
+/* --------------------------------------------------------------- buttons -- */
+
+.btn {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65em;
+  padding: 0.55em 1.5em;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: center;
+  transition:
+    background-color 0.16s var(--ease),
+    border-color 0.16s var(--ease),
+    color 0.16s var(--ease);
+}
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    border-color: var(--wax);
+    background: var(--wax);
+  }
+}
+.btn:active:not(:disabled) {
+  border-color: var(--wax-deep);
+  background: var(--wax-deep);
+}
+.btn:disabled {
+  border-color: var(--rule-2);
+  background: var(--rule);
+  color: var(--ink-3);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .btn--ghost:hover:not(:disabled) {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bone);
+  }
+}
+.btn--ghost:active:not(:disabled) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bone);
+}
+
+/* On the dark band. */
+.btn--bone {
+  border-color: var(--bone);
+  background: var(--bone);
+  color: var(--ink);
+}
+@media (hover: hover) {
+  .btn--bone:hover:not(:disabled) {
+    border-color: var(--bone);
+    background: transparent;
+    color: var(--bone);
+  }
+}
+.btn--bone:active:not(:disabled) {
+  border-color: var(--bone);
+  background: transparent;
+  color: var(--bone);
+}
+
+.btn__arrow {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  transition: transform 0.16s var(--ease);
+}
+@media (hover: hover) {
+  .btn:hover:not(:disabled) .btn__arrow {
+    transform: translateX(3px);
+  }
+}
+
+/* ---------------------------------------------------------------- header -- */
+
+.masthead {
+  border-bottom: 1px solid var(--rule);
+}
+.masthead__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 32px;
+  padding-block: 18px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 520;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.wordmark__seal {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+.nav a {
+  padding-block: 6px;
+  border-bottom: 1px solid transparent;
+}
+@media (hover: hover) {
+  .nav a:hover {
+    color: var(--wax);
+  }
+}
+.nav a[aria-current='page'] {
+  border-bottom-color: var(--ink);
+}
+
+/* ------------------------------------------------------------------ hero -- */
+
+.hero {
+  padding-top: clamp(40px, 7vw, 104px);
+}
+
+/* The corridor: a row of doors on one floor line. On a narrow screen it is
+   cropped at the right, so the corridor carries on past the edge. */
+.corridor {
+  display: block;
+  width: 100%;
+  height: clamp(210px, 33vw, 420px);
+  margin-top: clamp(32px, 5vw, 72px);
+}
+.corridor svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.corridor__line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.corridor__thin {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.corridor__leaf {
+  fill: var(--card);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.corridor__plate {
+  fill: var(--bone);
+  stroke: var(--ink);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.corridor__number {
+  fill: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+.corridor__open:focus-visible {
+  outline: 2px solid var(--wax);
+  outline-offset: 4px;
+}
+.corridor__light {
+  transform-origin: 190px 360px;
+  transition: transform 0.2s var(--ease);
+}
+@media (hover: hover) {
+  .corridor__open:hover .corridor__light {
+    transform: scaleY(1.18);
+  }
+}
+
+/* ----------------------------------------------------------------- rooms -- */
+
+/* An open room. Half of the plate is the room's own world, in the room's own
+   colours and type. The other half is this website describing it. */
+.plate {
+  position: relative;
+  display: grid;
+  border: 1px solid var(--ink);
+  background: var(--card);
+}
+@media (min-width: 60rem) {
+  .plate {
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+  }
+}
+
+.plate__world {
+  position: relative;
+  display: flex;
+  min-height: clamp(280px, 44vw, 520px);
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  background: var(--night);
+  color: var(--night-paper);
+  padding: clamp(20px, 3vw, 40px);
+}
+.plate__image {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  height: 82%;
+  object-fit: cover;
+  object-position: 60% 40%;
+  -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 52%, transparent 100%);
+}
+.plate__tag {
+  position: absolute;
+  top: clamp(16px, 2.4vw, 28px);
+  left: clamp(20px, 3vw, 40px);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--night-paper);
+}
+.plate__title {
+  position: relative;
+  font-family: var(--font-fell);
+  font-size: clamp(2.25rem, 4.6vw, 4rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--night-paper);
+}
+.plate__title span {
+  color: var(--ember);
+}
+
+.plate__body {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(24px, 3.4vw, 48px);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--wax);
+}
+.status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.status--sealed {
+  color: var(--ink-3);
+}
+.status--sealed::before {
+  border: 1px solid currentColor;
+  background: transparent;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--rule);
+}
+.facts > div {
+  padding: 14px 16px 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.facts dd {
+  margin-top: 2px;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+/* A room that is not open yet: a plain label, and a seal on hatching. */
+.sealed {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(104px, 32%, 148px);
+  min-height: 208px;
+  border: 1px solid var(--rule-2);
+  background: var(--bone);
+}
+.sealed__label {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(18px, 2.2vw, 28px);
+}
+.sealed__hatch {
+  display: grid;
+  place-items: center;
+  border-left: 1px solid var(--rule-2);
+  /* Diagonal hairlines, drawn as an SVG tile. Not a gradient. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M-1 15 15-1M-1 1 1-1M13 15l2-2' fill='none' stroke='%23D8D1C3'/%3E%3C/svg%3E");
+  background-size: 14px 14px;
+}
+.sealed__seal {
+  width: clamp(60px, 62%, 88px);
+  height: auto;
+}
+
+/* ----------------------------------------------------------------- steps -- */
+
+.steps {
+  display: grid;
+  gap: 0 40px;
+}
+@media (min-width: 40rem) {
+  .steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 72rem) {
+  .steps--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.step {
+  padding-block: 24px 40px;
+  border-top: 1px solid var(--ink);
+}
+.band--ink .step {
+  border-top-color: var(--ink-rule);
+}
+.step__n {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 3.25rem;
+  font-style: italic;
+  font-weight: 360;
+  line-height: 1;
+  color: var(--wax);
+}
+
+/* ----------------------------------------------------------------- prose -- */
+
+.prose {
+  max-width: 40em;
+}
+.prose > * + * {
+  margin-top: 1.1em;
+}
+.prose h2 {
+  margin-top: 2.2em;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.2vw, 1.875rem);
+  font-weight: 440;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+.prose h2:first-child {
+  margin-top: 0;
+}
+.prose h3 {
+  margin-top: 1.8em;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.prose a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--rule-2);
+  text-underline-offset: 0.22em;
+}
+@media (hover: hover) {
+  .prose a:hover {
+    color: var(--wax);
+    text-decoration-color: var(--wax);
+  }
+}
+.prose ul {
+  display: grid;
+  gap: 0.5em;
+  padding-left: 1.4em;
+}
+.prose li {
+  position: relative;
+}
+.prose li::before {
+  content: '';
+  position: absolute;
+  top: 0.78em;
+  left: -1.4em;
+  width: 0.8em;
+  height: 1px;
+  background: var(--wax);
+}
+.prose strong {
+  font-weight: 600;
+}
+
+/* A section of a long page: its number and name in the margin. */
+.clause {
+  display: grid;
+  gap: 12px 48px;
+  padding-block: 32px;
+  border-top: 1px solid var(--rule);
+}
+.clause:first-child {
+  border-top-color: var(--ink);
+}
+@media (min-width: 64rem) {
+  .clause {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+    padding-block: 40px;
+  }
+}
+.clause__n {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--wax);
+}
+
+/* ------------------------------------------------------------ questions -- */
+
+.faq {
+  border-top: 1px solid var(--ink);
+}
+.faq details {
+  border-bottom: 1px solid var(--rule);
+}
+.faq summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding-block: 20px;
+  cursor: pointer;
+  list-style: none;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq summary::after {
+  content: '+';
+  flex: none;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--wax);
+}
+.faq details[open] summary::after {
+  content: '\2212';
+}
+.faq__answer {
+  max-width: 40em;
+  padding-bottom: 24px;
+  color: var(--ink-2);
+}
+.faq__answer > * + * {
+  margin-top: 0.8em;
+}
+
+/* ---------------------------------------------------------------- fields -- */
+
+.field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.field__hint {
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+.input {
+  width: 100%;
+  min-height: 52px;
+  padding: 13px 16px;
+  border: 1px solid var(--rule-2);
+  border-radius: 0;
+  background: var(--card);
+  line-height: 1.4;
+  appearance: none;
+}
+.input::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+.input:hover {
+  border-color: var(--ink-3);
+}
+.input:focus-visible {
+  border-color: var(--ink);
+  outline-offset: 0;
+}
+.input[aria-invalid='true'] {
+  border-color: var(--wax);
+}
+textarea.input {
+  min-height: 180px;
+  resize: vertical;
+}
+select.input {
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%2317140F' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+.field__error {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--wax);
+}
+
+/* Left empty by people. Filled in by scripts that fill in everything. */
+.trap {
+  position: absolute;
+  left: -200vw;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.notice {
+  padding: 20px 24px;
+  border: 1px solid var(--ink);
+  background: var(--card);
+}
+.notice--wax {
+  border-color: var(--wax);
+}
+
+/* ---------------------------------------------------------------- footer -- */
+
+.colophon {
+  margin-top: auto;
+  border-top: 1px solid var(--ink);
+}
+.colophon__small {
+  border-top: 1px solid var(--rule);
+  font-size: 0.875rem;
+  color: var(--ink-3);
+}
+.colophon nav a {
+  display: inline-block;
+  padding-block: 4px;
+}
+@media (hover: hover) {
+  .colophon a:hover {
+    color: var(--wax);
+  }
+}
+
+/* ------------------------------------------------------------------ misc -- */
+
+.skip {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--bone);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+.skip:focus-visible {
+  transform: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

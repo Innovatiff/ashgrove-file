@@ -102,5 +102,15 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // The contact form's inbox, and the counters that limit it. Written by
+    // the sendMessage function, read in the Firebase console. No client
+    // access at all.
+    match /messages/{document=**} {
+      allow read, write: if false;
+    }
+    match /messageLimits/{document=**} {
+      allow read, write: if false;
+    }
   }
 }

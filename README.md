@@ -122,6 +122,37 @@ It needs Playwright with a Chromium, which is not a dependency of this
 project. Run it after changing the name, the headline, the colours or the
 corridor drawing, and commit the picture.
 
+**The analytics question.** Google Analytics is the only thing on the site
+that is not needed to play, and the only thing that sets cookies. It is off
+until a visitor allows it.
+
+- The answer lives in [`lib/consent.ts`](lib/consent.ts): one question for the
+  whole site, stored in the visitor's own browser (`localStorage`, key
+  `unsealed.consent`), read by every room. No answer, an unreadable one, one
+  for an older version of the question or one more than a year old all mean
+  the same thing: off, and ask again.
+- Analytics can start in exactly one place, `analytics()` in
+  [`lib/firebase.ts`](lib/firebase.ts), and that function refuses unless the
+  answer is yes. Until then Google Analytics is not loaded at all: no script,
+  no request, no cookie. A unit test fails if `firebase/analytics` is imported
+  anywhere else.
+- When it is allowed, it is for measurement only: Google's consent settings
+  for advertising are all set to denied. When it is refused or withdrawn,
+  collection stops, Google's own off switch for the measurement id is set, and
+  any `_ga` cookies are removed, including ones left from before the question
+  existed.
+- A room asks with [`<ConsentBanner>`](components/ui/ConsentBanner.tsx), in the
+  room's own dress, once the visitor is through its door: that is the first
+  moment there is anything to count, and the front page sets no cookie and
+  needs no question. Both answers are the same size and weight. It never
+  blocks play. The last entry at the foot of every page in the room says
+  whether analytics is on and opens the question again.
+- The main website never asks, because it never loads analytics. Its privacy
+  page shows the standing answer and lets it be changed
+  ([`<AnalyticsChoice>`](components/site/AnalyticsChoice.tsx)).
+- If what is being asked ever changes, raise `CONSENT_VERSION` and everyone is
+  asked again.
+
 **The small print.** `/privacy` and `/terms` are written from what the code
 does: which service holds what, and where. If the code changes (a new field in
 a player's file, analytics on or off, a new service), change the page in the
@@ -296,7 +327,7 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | 84 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. Nothing from `answers.json` is in a tracked file. |
+| `npm run test:unit` | 92 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. Nothing from `answers.json` is in a tracked file. |
 | `npm run test:rules` | 43 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. Nobody can read or write the contact inbox. |
 | `npm run test:functions` | 44 tests driving `checkAnswer`, `signOath`, `takeHint`, `accuse` and `sendMessage` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, a case that is counted once, and a contact form that tidies what it is sent, refuses what is wrong and stops at three messages a day. |
 | `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`. |
@@ -640,16 +671,18 @@ app/
 components/
   site/                      the main website: Masthead, Colophon, Corridor
                              (the drawing), Seal, RoomPlate, LiveCount,
-                             PageHead, Clauses, ContactForm, Arrow
+                             PageHead, Clauses, ContactForm, AnalyticsChoice,
+                             Arrow
   index.ts                   everything the room exposes for later rooms
   ui/                        Frame, DoubleRule, Section, FileLabel, BlendImage,
                              PinnedPhoto, Reveal, EvidenceCard, Redaction,
                              CodeInput, HintPanel, LedgerFooter, SiteHeader,
-                             LiveClock, TabTitle
+                             LiveClock, TabTitle, ConsentBanner
   illustrations/             Illustration, HallElevation, Lantern, Clock0317,
                              Teacup, Candle, FoxgloveSheet, AlphabetStrip,
                              Boardwalk, Dipstick
-  providers/                 AuthProvider (anonymous sign-in), ProgressProvider
+  providers/                 AuthProvider (anonymous sign-in), ProgressProvider,
+                             ConsentProvider (the answer about analytics)
   gate/                      Gate, Clearance
   threshold/                 HeroActions, Door
   oath/                      OathForm, KeepFile (Google link)
@@ -661,7 +694,8 @@ lib/
                              catalogue (the rooms), stats (the public count),
                              contact (the form's checks and its one call),
                              fonts, fonts-404
-  firebase.ts                one initialisation; analytics after isSupported()
+  consent.ts  use-consent.ts the answer about analytics, for the whole site
+  firebase.ts                one initialisation; analytics only once allowed
   api.ts                     the room's four callables, as the browser calls them
   progress.ts                players/{uid} read into what the interface needs
   rooms.ts                   room order and routes (ids only)

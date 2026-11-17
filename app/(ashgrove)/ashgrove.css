@@ -943,8 +943,9 @@
 .ledger__site {
   border-top: 1px solid var(--line);
 }
-/* Each link is tall enough to touch (28px), whatever line it wraps onto. */
-.ledger__site a {
+/* Each entry is tall enough to touch (28px), whatever line it wraps onto. */
+.ledger__site a,
+.ledger__site button {
   display: inline-block;
   padding-block: 6px;
   text-decoration: underline;
@@ -952,11 +953,35 @@
   text-decoration-color: var(--line-strong);
   text-underline-offset: 4px;
 }
+.ledger__site button {
+  padding-inline: 0;
+  border: 0;
+  background: none;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
 @media (hover: hover) {
-  .ledger__site a:hover {
+  .ledger__site a:hover,
+  .ledger__site button:hover {
     color: var(--paper);
     text-decoration-color: var(--paper);
   }
+}
+
+/* The one question the file asks before it counts anything. It keeps to the
+   foot of the window until it is answered. It is the last thing on the page,
+   so at the end of the page it sits under the ledger and covers nothing.
+   While it is open the page keeps its height clear when scrolling something
+   into view, so whatever has the focus is never underneath it. */
+html {
+  scroll-padding-bottom: var(--consent-height, 0px);
+}
+.consent {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  border-top: 1px solid var(--line-strong);
+  background: var(--panel);
 }
 
 /* ------------------------------------------------------------------ misc -- */

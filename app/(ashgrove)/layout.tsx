@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, IM_Fell_English_SC, Special_Elite } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { Providers } from '@/components/providers/Providers';
+import { ConsentBanner } from '@/components/ui/ConsentBanner';
 import { LedgerFooter } from '@/components/ui/LedgerFooter';
 import { SiteHeader } from '@/components/ui/SiteHeader';
 import { TabTitle } from '@/components/ui/TabTitle';
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               {children}
             </main>
             <LedgerFooter />
+            <ConsentBanner />
           </div>
           <TabTitle />
         </Providers>

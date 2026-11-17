@@ -2,6 +2,7 @@
 
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
+import { useConsentChoice } from '@/components/providers/ConsentProvider';
 import { useProgress } from '@/components/providers/ProgressProvider';
 import { useSeconds } from '@/lib/clock';
 import type { GlobalStats } from '@/lib/content';
@@ -55,12 +56,15 @@ function useGlobalStats(): GlobalStats | null {
  *
  * Under the ledger, one quiet line leads back out: to the main website this
  * room belongs to, its other rooms and its small print. Those pages have a
- * layout of their own, so each of these links is a full page load.
+ * layout of their own, so each of these links is a full page load. The last
+ * entry says whether analytics is on, and opens that question again.
  */
 export function LedgerFooter() {
   const { progress } = useProgress();
+  const { consent, ask } = useConsentChoice();
   const stats = useGlobalStats();
   const now = useSeconds();
+  const counting = consent?.analytics === 'granted';
 
   // A closed case stops the clock at the moment the right name was given.
   const until = progress.closedAt ? progress.closedAt.getTime() : now * 1000;
@@ -99,12 +103,19 @@ export function LedgerFooter() {
             A room on <a href={SITE_HOME}>{SITE.name}</a>
             <Dot />
           </span>
-          {WAY_OUT.map((item, index) => (
+          {WAY_OUT.map((item) => (
             <span key={item.href}>
               <a href={item.href}>{item.label}</a>
-              {index < WAY_OUT.length - 1 ? <Dot /> : null}
+              <Dot />
             </span>
           ))}
+          {/* Says whether analytics is on, and opens the question again. */}
+          <span>
+            <button type="button" onClick={ask} data-testid="consent-change">
+              Analytics {counting ? 'on' : 'off'}
+              <span className="visually-hidden">. Change</span>
+            </button>
+          </span>
         </p>
       </nav>
     </footer>

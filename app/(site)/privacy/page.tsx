@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { AnalyticsChoice } from '@/components/site/AnalyticsChoice';
 import { type Clause, Clauses } from '@/components/site/Clauses';
 import { PageHead } from '@/components/site/PageHead';
 import { LEGAL_UPDATED, SITE } from '@/lib/site/brand';
@@ -30,7 +31,9 @@ const CLAUSES: readonly Clause[] = [
       <>
         <p>
           The pages that list and describe the rooms are the home page, About, How it works, Contact and the small
-          print. They do not make an account for you, they set no cookies and they run no analytics.
+          print. They do not make an account for you, they set no cookies and they run no analytics. They keep
+          nothing in your browser, unless you use the buttons further down this page to record an answer about
+          analytics.
         </p>
         <p>
           The home page asks our database one anonymous question: how many people have gone into {ASHGROVE.title},
@@ -55,13 +58,29 @@ const CLAUSES: readonly Clause[] = [
             number, which rooms you have solved and when, which hints you have taken, how many guesses you have made
             in the last minute, the accusations you have made and when you finished.
           </li>
-          <li>
-            <strong>Some events are counted with Google Analytics</strong> once you are through the door: that a room
-            was solved, that a hint was taken, that an accusation was made. Google Analytics sets cookies in your
-            browser to tell one visitor from another. We use it to see where people get stuck. We do not use it for
-            advertising.
-          </li>
         </ul>
+      </>
+    ),
+  },
+  {
+    name: 'Analytics, if you allow it',
+    body: (
+      <>
+        <p>
+          A room would like to count what happens in it: that a room was solved, that a hint was taken, that an
+          accusation was made. We use the numbers to see where people get stuck. The counting is done by Google
+          Analytics, which sets cookies in your browser to tell one visitor from another.
+        </p>
+        <p>
+          It is off until you say otherwise. A room asks once, when you go through its door, and both answers are
+          offered side by side. If you refuse, or do not answer, Google Analytics is never loaded: no script, no
+          request and no cookie. If you allow it, it is used for measurement only, never for advertising.
+        </p>
+        <p>
+          Your answer is kept in your browser, so that you are not asked again on every page. It is asked for again
+          after a year. You can change it here at any time, or from the foot of any page in a room.
+        </p>
+        <AnalyticsChoice />
       </>
     ),
   },
@@ -139,8 +158,8 @@ const CLAUSES: readonly Clause[] = [
           our database until we delete it. Ask, and we will.
         </li>
         <li>
-          <strong>You can block Google Analytics</strong> in your browser’s settings or with a content blocker. The
-          rooms work without it.
+          <strong>To change your answer about analytics,</strong> use the buttons under “Analytics, if you allow it”
+          above. Refusing stops it at once and removes its cookies. The rooms work the same without it.
         </li>
       </ul>
     ),

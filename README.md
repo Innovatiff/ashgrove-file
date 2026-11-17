@@ -5,16 +5,28 @@ archive, solve one code per room, and finally accuse the killer.
 
 ![The Threshold](docs/screenshots/threshold-hero.jpg)
 
-This is the foundation: the landing page (the Threshold), the Oath, Room I
-(The Study), a stub for Room II, and all the machinery the other rooms will
-stand on. More screenshots are in [`docs/screenshots`](docs/screenshots).
+The whole file is here: the Threshold, the Oath, seven rooms and the
+accusation. More screenshots are in [`docs/screenshots`](docs/screenshots).
 
 | Route | What it is |
 | --- | --- |
 | `/` | The Threshold. Hero, the legend, the victim, the rules of entry, the recruitment letter and the door. |
 | `/oath` | Name, promise, badge. Optional Google link to keep the file on any device. |
-| `/file/study` | Room I. Its papers, figures, question and hints are read from Firestore. |
-| `/file/coroner` | Room II. A sealed stub, reachable only after Room I is solved. |
+| `/file/study` | Room I, The Study. |
+| `/file/coroner` | Room II, The Coroner. |
+| `/file/herbarium` | Room III, The Herbarium. |
+| `/file/journal` | Room IV, The Journal. |
+| `/file/register` | Room V, The Register. |
+| `/file/marsh` | Room VI, The Marsh. |
+| `/file/lamp` | Room VII, The Seventh Lamp. |
+| `/verdict` | The accusation. Five photographs, the detective's own evidence, three chances to name the killer, then the closing account and a rank. |
+
+![Room II, The Coroner](docs/screenshots/room-coroner.jpg)
+
+Every room opens with the code of the room before it. A room's exhibit, the
+statement of the person it points at, its papers, figures, question and hints
+are read from Firestore, never from the bundle. Who did it is not in the
+browser at all.
 
 ## Stack
 
@@ -23,7 +35,7 @@ stand on. More screenshots are in [`docs/screenshots`](docs/screenshots).
   routes, no middleware.
 - **Firebase**: Hosting, Authentication, Cloud Firestore, Cloud Functions
   (2nd gen, TypeScript) and Analytics. Project id `ashgrove-file`.
-- All server logic is three callable Cloud Functions. The browser never
+- All server logic is four callable Cloud Functions. The browser never
   writes to Firestore.
 
 ## Requirements
@@ -93,17 +105,19 @@ instead, create `.env.development.local` containing
 
 ## Seeding answers and room content
 
-`scripts/seed.ts` uses the Admin SDK and writes four things:
+`scripts/seed.ts` uses the Admin SDK and writes these:
 
 | Collection | Source | Contents |
 | --- | --- | --- |
-| `answers/{gate}` | `answers.json` | SHA-256 of the normalised answer, the three hint texts, the ids of the evidence the gate awards |
-| `evidence/{id}` | `answers.json` | What a solved room gives up, including the text behind the redaction bar |
-| `rooms/{roomId}` | `scripts/content/rooms.ts` | Title, papers, figures, prompt, image name and size |
+| `answers/{gate}` | `answers.json` | SHA-256 of the normalised answer and of any other accepted way of writing it, the three hint texts, the ids of the evidence the gate awards |
+| `answers/verdict` | `answers.json` | SHA-256 of the id of the one who did it, and why it was not each of the others |
+| `evidence/{id}` | `answers.json` | What a solved room gives up, the reason a wrong accusation missed, and the closing account |
+| `rooms/{roomId}` | `scripts/content/rooms.ts` | Title, exhibit, witness, papers, figures, prompt |
+| `rooms/verdict` | `scripts/content/rooms.ts` | The five who can be named, and what each of them said |
 | `stats/global` | | `{ entered: 0, closed: 0 }`, created only if missing. Seeding never resets live counters. |
 
-`answers.json` is **git-ignored**. It is the only place the codes exist outside
-Firestore. Its shape is in `answers.example.json`:
+`answers.json` is **git-ignored**. It is the only place the codes exist in the
+clear outside Firestore. Its shape is in `answers.example.json`:
 
 ```json
 {
@@ -114,13 +128,46 @@ Firestore. Its shape is in `answers.example.json`:
     "evidence": [
       { "id": "study-time-of-death", "title": "Time of death", "body": "One line.", "reveal": "HH:MM" }
     ]
+  },
+  "coroner": { "answer": ["one way of writing it", "another"], "hints": ["…", "…", "…"], "evidence": [] },
+  "verdict": {
+    "answer": "a-suspect-id",
+    "rebuttals": { "another-suspect-id": "Why it was not them." },
+    "evidence": [{ "id": "verdict-account", "title": "Their name", "body": "What happened." }]
   }
 }
 ```
 
 The seed validates everything before it writes: three hints per room, every
-open room has an answer, every redaction points at evidence that exists, and
-no room document contains its own answer in plain text.
+open room has an answer, every redaction points at evidence that exists, no
+room document contains its own answer in plain text, the verdict names
+someone who is on the wall, and every other suspect has a rebuttal.
+
+### Sealed answers
+
+A deploy needs `answers.json`, and the rooms in a commit can only be solved
+with the answers written for that commit. So the answers travel with the
+code, sealed:
+
+```bash
+npm run answers:seal
+```
+
+This writes `answers.sealed.json`, which **is** committed. It is
+`answers.json` encrypted to the public half of the deploy's service account
+key. Google publishes that half, so sealing needs no secret. Anyone can read
+the sealed file. Only the holder of the private key can open it, and that is
+the deploy workflow.
+
+Seal again whenever `answers.json` changes, and whenever the deploy key is
+replaced. A unit test fails if the sealed file is not the seal of the
+`answers.json` beside it, and `npm run answers:check` says the same in one
+line. The envelope is AES-256-GCM with the key wrapped by RSA-OAEP, made with
+Node's own `crypto`: see
+[`scripts/lib/sealed-answers.mjs`](scripts/lib/sealed-answers.mjs).
+
+Keep your own copy of `answers.json` somewhere safe. The sealed file cannot
+be opened without the deploy key, and you should not keep that key around.
 
 **Emulator**
 
@@ -148,10 +195,10 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | Answer normalisation and hashing. The room order in `firestore.rules` matches the code. A pasted key is repaired or refused without any of it being shown. The project check, against a pretend Google. |
-| `npm run test:rules` | 34 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. |
-| `npm run test:functions` | 22 tests driving `checkAnswer`, `signOath` and `takeHint` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties. |
-| `npm run check:bundle` | After a build: no code, hint, evidence or room paper appears anywhere in `/out`. |
+| `npm run test:unit` | 70 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. |
+| `npm run test:rules` | 40 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. |
+| `npm run test:functions` | 36 tests driving `checkAnswer`, `signOath`, `takeHint` and `accuse` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, and a case that is counted once. |
+| `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`. |
 | `npm run verify` | Typecheck, lint, all tests, a production build and the bundle check. |
 
 ## Deploy
@@ -216,18 +263,24 @@ rm key.json
 | API Keys Viewer | Reading the web app config during a Hosting deploy |
 | Cloud Datastore Index Admin | Deploying `firestore.indexes.json` |
 
-**2. Add two secrets to the repository.** On GitHub: **Settings → Secrets and
+**2. Add the key as a secret.** On GitHub: **Settings → Secrets and
 variables → Actions → New repository secret**
 ([direct link](https://github.com/Innovatiff/ashgrove-file/settings/secrets/actions/new)).
 
 | Name | Value |
 | --- | --- |
 | `FIREBASE_SERVICE_ACCOUNT` | The key you just copied, whole |
-| `ANSWERS_JSON` | The whole contents of your `answers.json` |
 
 Secrets are encrypted and cannot be read back, and nothing in the workflow
 prints them. The key can deploy to your project, so treat it like a password.
 To revoke it, delete it under **IAM → Service accounts → github-deploy → Keys**.
+
+The answers need no secret. They are in the repository as
+`answers.sealed.json`, sealed for this key, and the workflow opens them with
+it (see [Sealed answers](#sealed-answers)). If you ever replace the key, run
+`npm run answers:seal` again and commit the result. A secret named
+`ANSWERS_JSON`, holding the contents of `answers.json`, is still read as a
+fallback when there is no sealed file the key can open.
 
 **3. Check the setup.** Open
 [Check deploy setup](https://github.com/Innovatiff/ashgrove-file/actions/workflows/check.yml)
@@ -236,10 +289,11 @@ It takes about two minutes and lists what it found on the run's page:
 
 | It checks | And tells you |
 | --- | --- |
-| The two secrets | Whether each is there and readable. If not, what arrived instead, in counts only |
-| The key | Whether Google accepts it, and whether it is allowed to deploy |
+| The key | Whether it is there and readable. If not, what arrived instead, in counts only |
+| The answers | Whether the sealed answers open with that key |
+| Google | Whether it accepts the key, and whether the key is allowed to deploy |
 | The project | Blaze plan, Firestore location against the functions region, Anonymous and Google sign-in |
-| The answers | Whether `ANSWERS_JSON` fits the rooms (a dry run of the seed) |
+| The rooms | Whether the answers fit the rooms (a dry run of the seed) |
 
 A green tick means the deploy has what it needs. A red cross comes with the
 line that says what to fix, and usually the link to fix it.
@@ -307,7 +361,7 @@ the server.
 
 ```
 browser ──reads──▶ Firestore   (firestore.rules decides what is visible)
-browser ──calls──▶ checkAnswer / signOath / takeHint   (the only writers)
+browser ──calls──▶ checkAnswer / signOath / takeHint / accuse   (the only writers)
 ```
 
 **Data model**
@@ -316,22 +370,26 @@ browser ──calls──▶ checkAnswer / signOath / takeHint   (the only write
 | --- | --- | --- |
 | `players/{uid}` | Its owner only, one document at a time | Functions only |
 | `rooms/{roomId}` | Only when the requester's `players` doc shows the room before it solved | Seed script |
+| `rooms/verdict` | Only when the seventh room is solved | Seed script |
 | `evidence/{id}` | Only when the id is already in the requester's `players.evidence` | Seed script |
-| `answers/{gate}` | Never | Seed script |
+| `answers/{gate}`, `answers/verdict` | Never | Seed script |
 | `badges/{badge}` | Never | `signOath` |
 | `stats/global` | Everyone | Functions only |
 
 `players/{uid}` holds `detectiveName`, `badge`, `oathAt`,
 `solved { gate: timestamp }`, `evidence [ids]`, `hintPenalty` (minutes),
-`hintsTaken { room: tier }`, `accusationsLeft` and
-`attempts { gate: { count, windowStart } }`.
+`hintsTaken { room: tier }`, `accusationsLeft`,
+`attempts { gate: { count, windowStart } }`, and for the accusation
+`accused [ids]`, `closedAt` and `rank`.
 
 Two collections go beyond the original four, both for a reason:
 
 - **`evidence`**: the card a solved room awards contains the answer. Stored in
   `rooms/study` it would be readable before the room is solved, so it lives in
   its own collection that opens only once the function has added its id to the
-  player's file.
+  player's file. The reason a wrong accusation missed, and the closing
+  account, are cards of the same kind: a detective can read only the ones
+  they have earned.
 - **`badges`**: a badge is unique because it is reserved as its own document
   inside the same transaction that assigns it.
 
@@ -342,6 +400,13 @@ Two collections go beyond the original four, both for a reason:
 | `checkAnswer({ room, answer })` | Normalises the answer (uppercase, spaces and punctuation stripped, times kept as `HH:MM`), compares its SHA-256 with `answers/{room}.hash`. Enforces room order and 10 tries per room per minute. On success writes the solved timestamp and evidence ids and returns the next route. Never returns an answer or a hash. |
 | `signOath({ name })` | Requires the Threshold solved. Cleans the name, assigns a unique `ASH-XXXX` badge, writes the oath, increments `stats.entered`. Signing twice changes nothing. |
 | `takeHint({ room, tier })` | Tiers in order only. Returns the hint text and adds 5, 10 or 20 minutes. Re-reading a hint already taken is free. |
+| `accuse({ suspect })` | Requires all seven rooms solved. Hashes the name and compares it with `answers/verdict.hash`. A miss costs one of three accusations and is answered only with why it was not that person. The right name stamps `closedAt`, fixes the rank, hands over the closing account and adds one to `stats.closed`, once. Never returns the right name. |
+
+**Rank.** A closed case is ranked on what it cost: the minutes its hints
+added, plus 30 for every accusation that missed. Nothing: Warden-Breaker. Up
+to 15: Chief Inspector. Up to 60: Inspector. Up to 120: Sergeant. More:
+Constable. The time on file is recorded beside the rank and does not change
+it, so a detective who sleeps on a room is not marked down for sleeping.
 
 ## The design system
 
@@ -383,30 +448,43 @@ Everything a later room needs is exported from `@/components`.
 | `Reveal` | Opacity and 16px, 700ms, once, 80ms stagger for siblings. |
 | `EvidenceCard` | A framed case document in Special Elite. `variant="evidence"` for what the detective has established. |
 | `Redaction` | `Time of death: ████`, lifting to the value in orange. |
-| `CodeInput` | Labelled mono input and submit. `format="time"` sets digits as `HH:MM`. Reports wrong, blocked and error states. |
+| `CodeInput` | Labelled mono input and submit. `format="time"` sets digits as `HH:MM`, `format="number"` keeps figures only. Reports wrong, blocked and error states. |
 | `HintPanel` | Three tiers, one at a time, each behind a confirmation. |
 | `LedgerFooter` | Rooms, time on file, accusations, and the live global counters. |
-| `HallElevation`, `Lantern`, `Clock0317`, `Teacup`, `Candle` | Line illustrations. One part of each may be orange. |
+| `Paper` | One paper from a room: typed text, a ruled ledger, or a page of cipher. A ledger is a real table on a wide screen and a short list per row on a narrow one. |
+| `WitnessCard` | A pinned photograph and what that person said. |
+| `HallElevation`, `Lantern`, `Clock0317`, `Teacup`, `Candle`, `FoxgloveSheet`, `AlphabetStrip`, `Boardwalk`, `Dipstick` | Line illustrations. One part of each may be orange. |
 | `Illustration` | The wrapper to build more: one-pixel strokes that draw once on entering view. |
-| `Gate` | Client-side gating: `need="threshold" \| "oath" \| roomId`. |
+| `Gate` | Client-side gating: `need="threshold" \| "oath" \| "verdict" \| roomId`. |
 | `CaseRoom` | Lays out any room from its Firestore document. |
+| `Verdict` | The accusation: the wall, the evidence, the name, and the closed case. |
 
-## Adding the next room
+## Changing a room
 
-1. Write the room in [`scripts/content/rooms.ts`](scripts/content/rooms.ts)
-   with `status: 'open'`. Nothing in it may give the code away.
-2. Add its entry to `answers.json`: answer, three hints, evidence.
-3. Add `app/file/{room}/page.tsx`. Two lines if the standard layout suits:
+A room is two halves, kept apart on purpose.
 
-   ```tsx
-   <Gate need="coroner">
-     <CaseRoom room="coroner" />
-   </Gate>
-   ```
+1. **What a detective is shown** is in
+   [`scripts/content/rooms.ts`](scripts/content/rooms.ts): the exhibit, the
+   witness and their statement, the papers (text, ledgers, cipher), the
+   figures and the question. Nothing in it may give the code away, and the
+   seed refuses a room that contains its own answer.
+2. **What a detective has to find** is in `answers.json`: the code (or a list
+   of accepted ways of writing it), three hints, and the evidence card the
+   room gives up.
 
-   Or compose the kit by hand for a room that needs its own layout.
-4. Add the room id to `BUILT_ROOMS` in [`lib/rooms.ts`](lib/rooms.ts).
-5. Seed.
+Then seal and seed:
+
+```bash
+npm run answers:seal
+```
+
+```bash
+npm run seed:emulator
+```
+
+Commit `answers.sealed.json` with the change. A room's page is two lines
+(`<Gate need="…"><CaseRoom room="…" /></Gate>`), and a new line drawing is one
+component in `components/illustrations` plus a line in its `FIGURES` registry.
 
 Room ids and their order live in
 [`functions/src/config/game.ts`](functions/src/config/game.ts). `firestore.rules`
@@ -434,8 +512,9 @@ app/
   globals.css                tokens and every primitive
   page.tsx                   the Threshold
   oath/page.tsx              the Oath
-  file/study/page.tsx        Room I
-  file/coroner/page.tsx      Room II (sealed stub)
+  file/{room}/page.tsx       Rooms I to VII: study, coroner, herbarium,
+                             journal, register, marsh, lamp
+  verdict/page.tsx           the accusation
   not-found.tsx
 components/
   index.ts                   everything exposed for later rooms
@@ -444,32 +523,37 @@ components/
                              CodeInput, HintPanel, LedgerFooter, SiteHeader,
                              LiveClock, TabTitle
   illustrations/             Illustration, HallElevation, Lantern, Clock0317,
-                             Teacup, Candle
+                             Teacup, Candle, FoxgloveSheet, AlphabetStrip,
+                             Boardwalk, Dipstick
   providers/                 AuthProvider (anonymous sign-in), ProgressProvider
   gate/                      Gate, Clearance
   threshold/                 HeroActions, Door
   oath/                      OathForm, KeepFile (Google link)
-  room/                      CaseRoom, useRoom, useEvidence
+  room/                      CaseRoom, Paper, WitnessCard, useRoom, useVerdict,
+                             useEvidence
+  verdict/                   Verdict (the wall, the name, the closed case)
 lib/
   firebase.ts                one initialisation; analytics after isSupported()
-  api.ts                     the three callables, as the browser calls them
+  api.ts                     the four callables, as the browser calls them
   progress.ts                players/{uid} read into what the interface needs
   rooms.ts                   room order and routes (ids only)
   clock.ts  format.ts  content.ts  public-images.generated.ts
 functions/
   src/index.ts
-  src/handlers/              checkAnswer, signOath, takeHint
+  src/handlers/              checkAnswer, signOath, takeHint, accuse
   src/lib/                   answers (normalise + hash), player, validate, options
-  src/config/                game.ts (room order, limits), region.ts
+  src/config/                game.ts (room order, limits, ranks), region.ts
 scripts/
-  seed.ts                    answers, evidence, rooms, stats
-  ci-credentials.mjs         turns the two GitHub secrets into files for a deploy
+  seed.ts                    answers, evidence, rooms, the accusation, stats
+  seal-answers.mjs           seals answers.json for the deploy key
+  ci-credentials.mjs         puts the key and the answers in place for a deploy
   ci-preflight.mjs           asks Google, read-only, whether the project is ready
-  lib/                       secret-json (repairs a pasted key), google-preflight,
-                             ci-report
+  lib/                       secret-json (repairs a pasted key), sealed-answers,
+                             google-preflight, ci-report
   check-bundle.ts            fails if anything secret is in /out
   process-images.mjs         sources to 2400px WebP
-  content/                   rooms.ts, types.ts, images.generated.json
+  content/                   rooms.ts (the seven rooms and the wall), answers.ts
+                             (reads answers.json), types.ts, images.generated.json
 tests/
   unit/  rules/  functions/
 docs/
@@ -481,6 +565,7 @@ public/images/               fifteen .webp files
   check.yml                  check the secrets and the project, deploy nothing
 firebase.json  .firebaserc  firestore.rules  firestore.indexes.json
 answers.example.json         the shape of the git-ignored answers.json
+answers.sealed.json          answers.json, sealed for the deploy key
 .env.local                   Firebase web config (public identifiers)
 .env.development             next dev talks to the emulators
 ```
@@ -496,9 +581,14 @@ answers.example.json         the shape of the git-ignored answers.json
 - **`.env.local` is tracked.** It holds only the Firebase web config, which is
   public by design and readable in the shipped bundle. Nothing secret belongs
   in it.
-- **Rooms III to VII have provisional ids** (`herbarium`, `journal`, `register`,
-  `marsh`, `lamp`), inferred from the exhibit set. Rename them in
-  `functions/src/config/game.ts` and `firestore.rules` before building them.
+- **The repository is public, and so are the rooms' papers.**
+  `scripts/content/rooms.ts` is everything a detective is shown, and anyone
+  can read it here. What they cannot read here is what a detective has to
+  find: the codes, the hints, the evidence, why it was not each suspect, and
+  the closing account. Those are in `answers.sealed.json` only.
+- **Functions run in `northamerica-northeast1`,** because that is where this
+  project's Firestore database is. The region is one constant,
+  `functions/src/config/region.ts`, and the web app reads the same one.
 - **First load is about 390 KB of JavaScript, gzipped,** roughly half of it the
   Firebase SDK. The pages are prerendered, so content paints without it.
   Loading Firebase after first paint is the obvious next optimisation.

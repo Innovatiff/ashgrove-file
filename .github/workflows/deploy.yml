@@ -5,10 +5,13 @@ name: Deploy to Firebase
 # It runs only when someone starts it:
 #   Actions tab -> Deploy to Firebase -> Run workflow
 #
-# One-time setup is in README.md, under "Deploy from GitHub". It needs two
-# repository secrets:
+# One-time setup is in README.md, under "Deploy from GitHub". It needs one
+# repository secret:
 #   FIREBASE_SERVICE_ACCOUNT   a service account key that is allowed to deploy
-#   ANSWERS_JSON               the contents of answers.json (needed to seed)
+#
+# The answers come from answers.sealed.json in the repository, which only that
+# key can open. A secret named ANSWERS_JSON is read as a fallback when there
+# is no sealed file the key can open.
 #
 # To test the setup without deploying anything, run "Check deploy setup"
 # (check.yml) instead.
@@ -62,9 +65,10 @@ jobs:
           node-version: 22
           package-manager-cache: false
 
-      # Stops here, before anything is deployed, if a secret is missing or
-      # cannot be read. A key damaged in the copy is repaired when it can be.
-      - name: Put the secrets in place
+      # Stops here, before anything is deployed, if the key is missing or
+      # cannot be read, or the sealed answers do not open with it. A key
+      # damaged in the copy is repaired when it can be.
+      - name: Put the key and the answers in place
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           ANSWERS_JSON: ${{ secrets.ANSWERS_JSON }}

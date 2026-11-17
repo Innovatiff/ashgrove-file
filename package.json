@@ -17,6 +17,8 @@
     "emulators:hosting": "npm run functions:build && npm run build:emulator && firebase emulators:start",
     "seed:emulator": "tsx scripts/seed.ts --emulator",
     "seed:prod": "tsx scripts/seed.ts --production",
+    "answers:seal": "node scripts/seal-answers.mjs",
+    "answers:check": "node scripts/seal-answers.mjs --check",
     "images": "node scripts/process-images.mjs",
     "test": "npm run test:unit && npm run test:rules && npm run test:functions",
     "test:unit": "tsx --test --test-reporter=spec \"tests/unit/**/*.test.ts\"",

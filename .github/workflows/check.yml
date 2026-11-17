@@ -4,10 +4,11 @@ name: Check deploy setup
 #
 #   Actions tab -> Check deploy setup -> Run workflow
 #
-# It reads the two repository secrets, asks Google whether the project is
-# ready (read-only), and checks the answers against the rooms. The result is
-# on the run's summary page, one line per check. Run it after saving a secret,
-# or whenever "Deploy to Firebase" stops early.
+# It reads the key from its repository secret, opens the sealed answers with
+# it, asks Google whether the project is ready (read-only), and checks the
+# answers against the rooms. The result is on the run's summary page, one
+# line per check. Run it after saving a secret, or whenever "Deploy to
+# Firebase" stops early.
 #
 # There is no deploy command in this file. It cannot change the project.
 
@@ -35,9 +36,9 @@ jobs:
           node-version: 22
           package-manager-cache: false
 
-      # Each later step runs whenever its own secret is usable, so one run
+      # Each later step runs whenever what it needs is usable, so one run
       # reports everything it can.
-      - name: Read the two secrets
+      - name: Read the key and open the answers
         id: secrets
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

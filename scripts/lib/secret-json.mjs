@@ -194,13 +194,29 @@ export function describePrivateKey(value) {
   const found = keyMaterial(value);
   const real = (value.match(/\n/g) ?? []).length;
   const written = (value.match(/\\n/g) ?? []).length;
-  return [
+  const facts = [
     `the private key is ${value.length} characters long. In a key file it is 1,704`,
     `line breaks in it: ${real}, and ${written} more still written out as backslash-n. A key has 28 and 0`,
-    found
-      ? `key material between its markers: ${found.material.length} characters. A key has 1,624`
-      : 'its BEGIN and END markers could not be found',
   ];
+  if (!found) return [...facts, 'its BEGIN and END markers could not be found'];
+
+  const count = (symbol) => found.material.split(symbol).length - 1;
+  facts.push(
+    `key material between its markers: ${found.material.length} characters. A key has 1,624`,
+    `of those, plus signs: ${count('+')}, slashes: ${count('/')}, equals signs: ${count('=')}. A key has about 25 of each of the first two`,
+  );
+
+  // Where the missing characters went missing. Every line of a key is 64 long
+  // but the last, so the lengths alone show it, and they show nothing else.
+  const lines = value
+    .replace(/\\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.includes('-----'));
+  if (lines.length > 1) {
+    facts.push(`its ${lines.length} lines of key material are this long: ${lines.map((line) => line.length).join(' ')}. In a key each is 64 and the last 24`);
+  }
+  return facts;
 }
 
 /** Names what a JSON object is, when it is something other than a key. */

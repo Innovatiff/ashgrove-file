@@ -161,7 +161,9 @@ One-time setup in the Firebase console for `ashgrove-file`:
 1. **Authentication → Sign-in method**: enable **Anonymous** and **Google**.
 2. **Firestore**: note the database location, then set the matching region in
    [`functions/src/config/region.ts`](functions/src/config/region.ts). It is the
-   only place the region is set. The web app reads the same constant.
+   only place the region is set. The web app reads the same constant. It is
+   set to `northamerica-northeast1` (Montréal), where this project's database
+   is.
 3. **Billing**: the project must be on the **Blaze** plan.
 
 You do not have to take these on trust. The

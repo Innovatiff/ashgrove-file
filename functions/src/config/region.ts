@@ -12,8 +12,12 @@
  * Find yours in the Firebase console under Firestore Database, or run:
  *   firebase firestore:databases:get "(default)"
  *
+ * This project's database is in northamerica-northeast1 (Montreal). The
+ * "Check deploy setup" workflow reads the location back from Google and warns
+ * if the two ever stop matching.
+ *
  * The web app reads this same constant (lib/firebase.ts), so the client and
  * the functions cannot drift apart. Nothing here may import a package: this
  * file is compiled into the browser bundle too.
  */
-export const REGION = 'us-central1';
+export const REGION = 'northamerica-northeast1';

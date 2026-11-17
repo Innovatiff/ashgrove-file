@@ -1,0 +1,103 @@
+rules_version = '2';
+
+// The Ashgrove File.
+//
+// Clients may read. Clients may never write. Every write in this database is
+// made by a Cloud Function through the Admin SDK, which bypasses these rules.
+// A player who rewrites the web app in their browser still gets nothing: the
+// rules below decide what they can see, and nothing lets them change it.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function filePath() {
+      return /databases/$(database)/documents/players/$(request.auth.uid);
+    }
+
+    // True once the requester has a players document at all.
+    function hasFile() {
+      return signedIn() && exists(filePath());
+    }
+
+    // The requester's own players document.
+    function file() {
+      return get(filePath()).data;
+    }
+
+    // ROOM ORDER.
+    // Each room, and the room that must be solved before it opens. Room I
+    // ('study') is not listed: it opens with the oath, not with a room.
+    // Keep this in step with ROOM_ORDER in functions/src/config/game.ts.
+    // tests/unit/room-order.test.ts fails if the two disagree.
+    function roomBefore() {
+      return {
+        'coroner': 'study',
+        'herbarium': 'coroner',
+        'journal': 'herbarium',
+        'register': 'journal',
+        'marsh': 'register',
+        'lamp': 'marsh'
+      };
+    }
+
+    // The Threshold is solved and the oath is signed.
+    function sworn(player) {
+      return 'threshold' in player.get('solved', {})
+        && player.get('oathAt', null) != null;
+    }
+
+    function roomIsOpen(roomId) {
+      let player = file();
+      return sworn(player) && (
+        roomId == 'study'
+        || (roomId in roomBefore() && roomBefore()[roomId] in player.get('solved', {}))
+      );
+    }
+
+    // A player's progress. Readable only by its owner, one document at a time.
+    // Never writable by a client: not the name, not the solved rooms, not the
+    // hint penalty.
+    match /players/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    // A room's documents. Readable only when the requester's own players
+    // document shows the room before it solved.
+    match /rooms/{roomId} {
+      allow get: if hasFile() && roomIsOpen(roomId);
+      allow list: if false;
+      allow write: if false;
+    }
+
+    // What a solved room gives up. A card is readable only when its id is
+    // already in the requester's players document, which only checkAnswer
+    // can put there.
+    match /evidence/{evidenceId} {
+      allow get: if hasFile() && evidenceId in file().get('evidence', []);
+      allow list: if false;
+      allow write: if false;
+    }
+
+    // Answer hashes and hint texts. No client access at all.
+    match /answers/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Badge reservations. No client access at all.
+    match /badges/{document=**} {
+      allow read, write: if false;
+    }
+
+    // Detectives entered, cases closed. Public, read-only.
+    match /stats/{statId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

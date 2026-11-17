@@ -1,0 +1,29 @@
+{
+  "_readme": [
+    "Copy this file to answers.json and fill it in. answers.json is git-ignored: it is the only place the codes exist outside Firestore.",
+    "One entry per gate. 'threshold' is the word on the landing page. Every other key is a room id from ROOM_ORDER in functions/src/config/game.ts.",
+    "answer: the code, as you would type it. It is normalised (uppercase, spaces and punctuation stripped, times kept as HH:MM) and stored only as a SHA-256 hash.",
+    "hints: exactly three, cheapest first. They cost 5, 10 and 20 minutes. The threshold has none.",
+    "evidence: the cards a solved room gives up. Each id is written to the player's file on success. 'reveal' is the text that replaces the redaction bar.",
+    "Then run: npm run seed:emulator   or   npm run seed:prod"
+  ],
+  "threshold": {
+    "answer": "THE-WORD-ON-THE-DOOR"
+  },
+  "study": {
+    "answer": "00:00",
+    "hints": [
+      "First hint. The gentlest nudge.",
+      "Second hint. Most of the working.",
+      "Third hint. The answer itself."
+    ],
+    "evidence": [
+      {
+        "id": "study-time-of-death",
+        "title": "Time of death",
+        "body": "What the detective now knows, in one line.",
+        "reveal": "00:00"
+      }
+    ]
+  }
+}

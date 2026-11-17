@@ -9,6 +9,9 @@ name: Deploy to Firebase
 # repository secrets:
 #   FIREBASE_SERVICE_ACCOUNT   a service account key that is allowed to deploy
 #   ANSWERS_JSON               the contents of answers.json (needed to seed)
+#
+# To test the setup without deploying anything, run "Check deploy setup"
+# (check.yml) instead.
 
 on:
   workflow_dispatch:
@@ -59,13 +62,22 @@ jobs:
           node-version: 22
           package-manager-cache: false
 
-      # Stops here, before anything is deployed, if a secret is missing.
+      # Stops here, before anything is deployed, if a secret is missing or
+      # cannot be read. A key damaged in the copy is repaired when it can be.
       - name: Put the secrets in place
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           ANSWERS_JSON: ${{ secrets.ANSWERS_JSON }}
           WANT_SEED: ${{ inputs.seed }}
         run: node scripts/ci-credentials.mjs
+
+      # Read-only. Stops only on what would make this deploy fail: a key
+      # Google does not accept, or functions on a project that is not on
+      # Blaze. Anything else it finds is reported and the deploy goes on.
+      - name: Ask Google whether the project is ready
+        env:
+          WANT_FUNCTIONS: ${{ inputs.functions }}
+        run: node scripts/ci-preflight.mjs
 
       - name: Install dependencies
         run: |
@@ -77,6 +89,12 @@ jobs:
           npm run typecheck
           npm run lint
           npm run test:unit
+
+      # The seed's own validation, with nothing written. An answers file that
+      # does not fit the rooms stops the run before anything goes live.
+      - name: Check the answers against the rooms
+        if: inputs.seed
+        run: npm run seed:prod -- --dry-run
 
       # Order matters: the rules and the functions go live before the site
       # that depends on them.

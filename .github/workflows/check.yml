@@ -1,0 +1,65 @@
+name: Check deploy setup
+
+# Checks everything a deploy needs, and deploys nothing.
+#
+#   Actions tab -> Check deploy setup -> Run workflow
+#
+# It reads the two repository secrets, asks Google whether the project is
+# ready (read-only), and checks the answers against the rooms. The result is
+# on the run's summary page, one line per check. Run it after saving a secret,
+# or whenever "Deploy to Firebase" stops early.
+#
+# There is no deploy command in this file. It cannot change the project.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      # Each later step runs whenever its own secret is usable, so one run
+      # reports everything it can.
+      - name: Read the two secrets
+        id: secrets
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          ANSWERS_JSON: ${{ secrets.ANSWERS_JSON }}
+          WANT_SEED: 'true'
+        run: node scripts/ci-credentials.mjs
+
+      # Is the key accepted, is the project on Blaze, where is Firestore, are
+      # the sign-in methods on. Every question is read-only.
+      - name: Ask Google whether the project is ready
+        if: ${{ !cancelled() && steps.secrets.outputs.key == 'ok' }}
+        env:
+          PREFLIGHT_STRICT: 'true'
+        run: node scripts/ci-preflight.mjs
+
+      # The seed's own validation, with nothing written.
+      - name: Check the answers against the rooms
+        if: ${{ !cancelled() && steps.secrets.outputs.answers == 'ok' }}
+        run: |
+          npm ci
+          npm run seed:prod -- --dry-run
+
+      - name: Remove the secrets from the runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-service-account.json" answers.json

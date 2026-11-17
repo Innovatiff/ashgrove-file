@@ -148,7 +148,7 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | Answer normalisation and hashing. The room order in `firestore.rules` matches the code. |
+| `npm run test:unit` | Answer normalisation and hashing. The room order in `firestore.rules` matches the code. A pasted key is repaired or refused without any of it being shown. The project check, against a pretend Google. |
 | `npm run test:rules` | 34 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. |
 | `npm run test:functions` | 22 tests driving `checkAnswer`, `signOath` and `takeHint` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties. |
 | `npm run check:bundle` | After a build: no code, hint, evidence or room paper appears anywhere in `/out`. |
@@ -163,6 +163,10 @@ One-time setup in the Firebase console for `ashgrove-file`:
    [`functions/src/config/region.ts`](functions/src/config/region.ts). It is the
    only place the region is set. The web app reads the same constant.
 3. **Billing**: the project must be on the **Blaze** plan.
+
+You do not have to take these on trust. The
+[Check deploy setup](https://github.com/Innovatiff/ashgrove-file/actions/workflows/check.yml)
+workflow reads all three back from Google and says which is missing.
 
 Then deploy either from GitHub or from a terminal. Both do the same four
 things in the same order: rules, functions, seed, website.
@@ -190,7 +194,10 @@ gcloud iam service-accounts keys create key.json --iam-account github-deploy@ash
 ```
 
 The last command prints the key. Copy all of it, from the first `{` to the
-last `}`. Once it is saved in GitHub (next step), remove the copy:
+last `}`. The long line in the middle shows up broken across many rows. That
+is fine, and so is a stray line above or below it: the workflow repairs both.
+It cannot repair a missing piece, so take all of it. Once it is saved in
+GitHub (next step), remove the copy:
 
 ```bash
 rm key.json
@@ -219,7 +226,22 @@ Secrets are encrypted and cannot be read back, and nothing in the workflow
 prints them. The key can deploy to your project, so treat it like a password.
 To revoke it, delete it under **IAM → Service accounts → github-deploy → Keys**.
 
-**3. Run it.** Open the workflow's own page:
+**3. Check the setup.** Open
+[Check deploy setup](https://github.com/Innovatiff/ashgrove-file/actions/workflows/check.yml)
+and click **Run workflow**. It deploys nothing and cannot change the project.
+It takes about two minutes and lists what it found on the run's page:
+
+| It checks | And tells you |
+| --- | --- |
+| The two secrets | Whether each is there and readable. If not, what arrived instead, in counts only |
+| The key | Whether Google accepts it, and whether it is allowed to deploy |
+| The project | Blaze plan, Firestore location against the functions region, Anonymous and Google sign-in |
+| The answers | Whether `ANSWERS_JSON` fits the rooms (a dry run of the seed) |
+
+A green tick means the deploy has what it needs. A red cross comes with the
+line that says what to fix, and usually the link to fix it.
+
+**4. Run it.** Open the workflow's own page:
 [Deploy to Firebase](https://github.com/Innovatiff/ashgrove-file/actions/workflows/deploy.yml).
 Click **Run workflow** and leave all four boxes ticked the first time.
 
@@ -236,9 +258,12 @@ owner of the repository.
 | Seed answers and room content | `npm run seed:prod`, from the `ANSWERS_JSON` secret |
 | The website | `firebase deploy --only hosting` |
 
-If a secret is missing or malformed the run stops in its first seconds and
-says which one, before anything is deployed. After the first deploy, a change
-that only touches the site needs only the last box.
+The deploy starts with the same checks. If a secret is missing or cannot be
+read, or Google does not accept the key, the run stops in its first seconds
+and says why, before anything is deployed. After changing a secret, start a
+new run with **Run workflow**: **Re-run jobs** repeats the old run with the
+old code. After the first deploy, a change that only touches the site needs
+only the last box.
 
 To deploy automatically on every push instead, add a `push` trigger to the
 workflow. Give it a branch you only push finished work to.
@@ -436,6 +461,9 @@ functions/
 scripts/
   seed.ts                    answers, evidence, rooms, stats
   ci-credentials.mjs         turns the two GitHub secrets into files for a deploy
+  ci-preflight.mjs           asks Google, read-only, whether the project is ready
+  lib/                       secret-json (repairs a pasted key), google-preflight,
+                             ci-report
   check-bundle.ts            fails if anything secret is in /out
   process-images.mjs         sources to 2400px WebP
   content/                   rooms.ts, types.ts, images.generated.json
@@ -445,7 +473,9 @@ docs/
   image-prompts.md
   screenshots/
 public/images/               fifteen .webp files
-.github/workflows/deploy.yml deploy to Firebase from the Actions tab
+.github/workflows/
+  deploy.yml                 deploy to Firebase from the Actions tab
+  check.yml                  check the secrets and the project, deploy nothing
 firebase.json  .firebaserc  firestore.rules  firestore.indexes.json
 answers.example.json         the shape of the git-ignored answers.json
 .env.local                   Firebase web config (public identifiers)

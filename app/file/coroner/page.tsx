@@ -4,9 +4,8 @@ import { CaseRoom } from '@/components/room/CaseRoom';
 
 export const metadata: Metadata = { title: 'Room II' };
 
-// Room II. A stub for now: rooms/coroner is seeded as "sealed", so a
-// detective who solves Room I arrives somewhere real, and one who has not
-// is turned back by the gate and refused by the rules.
+// Room II. The page ships no content of its own: the title, the papers and
+// the question are read from rooms/coroner once the rules allow it.
 export default function CoronerPage() {
   return (
     <Gate need="coroner">

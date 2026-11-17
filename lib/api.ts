@@ -4,7 +4,7 @@ import { firebase } from '@/lib/firebase';
 import type { GateId, RoomId } from '@/lib/rooms';
 
 /**
- * The three Cloud Functions, as the browser calls them. These are the only
+ * The four Cloud Functions, as the browser calls them. These are the only
  * way to change a player's file.
  */
 
@@ -27,6 +27,17 @@ export interface TakeHintResult {
   text: string;
   penaltyAdded: number;
   hintPenalty: number;
+}
+
+export interface AccuseResult {
+  correct: boolean;
+  accusationsLeft: number;
+  /** Why it was not them. Present only when the name was wrong. */
+  rebuttal?: string;
+  /** Present only when the name was right. */
+  rank?: string;
+  /** True when the name was wrong and nothing is left to accuse with. */
+  sealed?: boolean;
 }
 
 /**
@@ -55,6 +66,12 @@ export async function takeHint(room: RoomId, tier: number): Promise<TakeHintResu
   await signedIn();
   const call = httpsCallable<{ room: RoomId; tier: number }, TakeHintResult>(firebase().functions, 'takeHint');
   return (await call({ room, tier })).data;
+}
+
+export async function accuse(suspect: string): Promise<AccuseResult> {
+  await signedIn();
+  const call = httpsCallable<{ suspect: string }, AccuseResult>(firebase().functions, 'accuse');
+  return (await call({ suspect })).data;
 }
 
 /** What went wrong, in terms the interface can act on. */

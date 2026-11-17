@@ -13,4 +13,8 @@ export type {
   RoomContent,
   RoomDocument,
   RoomFigure,
+  RoomTable,
+  Suspect,
+  VerdictContent,
+  Witness,
 } from '@/scripts/content/types';

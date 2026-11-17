@@ -3,39 +3,41 @@
 import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
-import type { EvidenceContent, RoomContent } from '@/lib/content';
+import type { EvidenceContent, RoomContent, VerdictContent } from '@/lib/content';
 import { firebase } from '@/lib/firebase';
-import type { RoomId } from '@/lib/rooms';
+import { type RoomId, VERDICT } from '@/lib/rooms';
 
-export type RoomState =
+export type FileState<T> =
   | { status: 'loading' }
-  | { status: 'ready'; room: RoomContent }
+  | { status: 'ready'; room: T }
   /** The document does not exist: the database has not been seeded. */
   | { status: 'missing' }
   /** firestore.rules refused: the room is not open to this detective. */
   | { status: 'denied' }
   | { status: 'error' };
 
+export type RoomState = FileState<RoomContent>;
+
 /**
- * Loads rooms/{roomId} from Firestore. A room's documents, prompt and image
+ * Loads rooms/{id} from Firestore. A room's documents, prompt and image
  * names are not in the bundle: they arrive here, and only if the rules agree
  * that this detective has solved the room before it.
  */
-export function useRoom(roomId: RoomId): RoomState {
+function useFileDocument<T>(id: string): FileState<T> {
   const { uid } = useAuth();
-  const [loaded, setLoaded] = useState<{ key: string; state: RoomState } | null>(null);
-  const key = `${uid ?? ''}:${roomId}`;
+  const [loaded, setLoaded] = useState<{ key: string; state: FileState<T> } | null>(null);
+  const key = `${uid ?? ''}:${id}`;
 
   useEffect(() => {
     if (!uid) return;
     let cancelled = false;
-    const settle = (state: RoomState) => {
+    const settle = (state: FileState<T>) => {
       if (!cancelled) setLoaded({ key, state });
     };
 
-    getDoc(doc(firebase().db, 'rooms', roomId))
+    getDoc(doc(firebase().db, 'rooms', id))
       .then((snapshot) =>
-        settle(snapshot.exists() ? { status: 'ready', room: snapshot.data() as RoomContent } : { status: 'missing' }),
+        settle(snapshot.exists() ? { status: 'ready', room: snapshot.data() as T } : { status: 'missing' }),
       )
       .catch((error: { code?: string }) => {
         settle({ status: error?.code === 'permission-denied' ? 'denied' : 'error' });
@@ -44,9 +46,21 @@ export function useRoom(roomId: RoomId): RoomState {
     return () => {
       cancelled = true;
     };
-  }, [uid, roomId, key]);
+  }, [uid, id, key]);
 
   return loaded?.key === key ? loaded.state : { status: 'loading' };
+}
+
+export function useRoom(roomId: RoomId): RoomState {
+  return useFileDocument<RoomContent>(roomId);
+}
+
+/**
+ * Loads the papers for the accusation: the five who can be named, and what
+ * each of them said. The rules release it when the seventh room is solved.
+ */
+export function useVerdict(): FileState<VerdictContent> {
+  return useFileDocument<VerdictContent>(VERDICT);
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   STARTING_ACCUSATIONS,
   THRESHOLD,
   THRESHOLD_ROUTE,
+  VERDICT_ROUTE,
 } from '@/lib/rooms';
 
 /** players/{uid}, as the browser reads it. Only Cloud Functions write it. */
@@ -22,6 +23,9 @@ export interface PlayerDoc {
   hintsTaken?: Record<string, number>;
   accusationsLeft?: number;
   attempts?: Record<string, { count: number; windowStart: Timestamp }>;
+  accused?: string[];
+  closedAt?: Timestamp | null;
+  rank?: string | null;
 }
 
 /** Everything the interface needs to know about where a player stands. */
@@ -38,6 +42,14 @@ export interface Progress {
   hintPenalty: number;
   hintsTaken: Record<string, number>;
   accusationsLeft: number;
+  /** Ids of the people this detective has accused and been wrong about. */
+  accused: string[];
+  /** Every one of the seven rooms is solved: the accusation is open. */
+  roomsDone: boolean;
+  /** When the right name was given. null until the case is closed. */
+  closedAt: Date | null;
+  /** The rank the case was closed at. */
+  rank: string | null;
   /** The furthest place this player is allowed to be. */
   resumeRoute: string;
 }
@@ -54,6 +66,10 @@ export const NO_PROGRESS: Progress = {
   hintPenalty: 0,
   hintsTaken: {},
   accusationsLeft: STARTING_ACCUSATIONS,
+  accused: [],
+  roomsDone: false,
+  closedAt: null,
+  rank: null,
   resumeRoute: THRESHOLD_ROUTE,
 };
 
@@ -63,9 +79,12 @@ export function readProgress(player: PlayerDoc | null): Progress {
   const oathAt = player?.oathAt?.toDate() ?? null;
   const oathSigned = thresholdSolved && oathAt !== null;
   const solvedRooms = ROOM_ORDER.filter((room) => Boolean(solved[room]));
+  const roomsDone = oathSigned && solvedRooms.length === ROOM_ORDER.length;
 
   let resumeRoute = THRESHOLD_ROUTE;
-  if (oathSigned) {
+  if (roomsDone) {
+    resumeRoute = VERDICT_ROUTE;
+  } else if (oathSigned) {
     // The first unsolved room that is open and has a page. If every built
     // room is solved, stay in the last one that exists.
     let furthest: RoomId = ROOM_ORDER[0];
@@ -93,6 +112,10 @@ export function readProgress(player: PlayerDoc | null): Progress {
     hintPenalty: player?.hintPenalty ?? 0,
     hintsTaken: player?.hintsTaken ?? {},
     accusationsLeft: player?.accusationsLeft ?? STARTING_ACCUSATIONS,
+    accused: player?.accused ?? [],
+    roomsDone,
+    closedAt: player?.closedAt?.toDate() ?? null,
+    rank: player?.rank ?? null,
     resumeRoute,
   };
 }

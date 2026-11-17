@@ -46,6 +46,9 @@ function useGlobalStats(): GlobalStats | null {
  *   ROOMS 1/7 · TIME ON FILE 00:42:10 · ACCUSATIONS LEFT 3
  *   DETECTIVES ENTERED 0412 · CASES CLOSED 0037
  *
+ * Once the case is closed the clock stops where it stood and the last entry
+ * reads CASE CLOSED.
+ *
  * The first line is this detective's own file. The second is everyone's,
  * and moves whenever anyone, anywhere, signs the oath or closes the case.
  */
@@ -54,7 +57,9 @@ export function LedgerFooter() {
   const stats = useGlobalStats();
   const now = useSeconds();
 
-  const onFile = progress.oathAt && now > 0 ? elapsed(now * 1000 - progress.oathAt.getTime()) : '--:--:--';
+  // A closed case stops the clock at the moment the right name was given.
+  const until = progress.closedAt ? progress.closedAt.getTime() : now * 1000;
+  const onFile = progress.oathAt && now > 0 ? elapsed(until - progress.oathAt.getTime()) : '--:--:--';
 
   return (
     <footer className="ledger">
@@ -69,7 +74,7 @@ export function LedgerFooter() {
             {progress.hintPenalty > 0 ? <span className="muted"> +{progress.hintPenalty} min</span> : null}
             <Dot />
           </span>
-          <span>Accusations left {progress.accusationsLeft}</span>
+          <span>{progress.closedAt ? <span className="ember">Case closed</span> : <>Accusations left {progress.accusationsLeft}</>}</span>
         </p>
 
         <p className="mono muted run" data-testid="global-stats">

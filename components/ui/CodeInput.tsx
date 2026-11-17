@@ -17,8 +17,8 @@ export type CodeOutcome =
 export interface CodeInputProps {
   /** The visible label, e.g. "STATE THE WORD THAT LETS YOU IN". */
   label: string;
-  /** time: digits are set as HH:MM while typing. text: anything. */
-  format?: 'text' | 'time';
+  /** time: digits are set as HH:MM while typing. number: figures only. text: anything. */
+  format?: 'text' | 'time' | 'number';
   submitLabel?: string;
   placeholder?: string;
   maxLength?: number;
@@ -33,6 +33,10 @@ export interface CodeInputProps {
 function asTime(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 4);
   return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits;
+}
+
+function asNumber(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, 9);
 }
 
 function Countdown({ until, onDone }: { until: number; onDone: () => void }) {
@@ -102,11 +106,12 @@ export function CodeInput({
           type="text"
           value={solved ? solvedValue : value}
           onChange={(event) => {
-            setValue(format === 'time' ? asTime(event.target.value) : event.target.value);
+            const typed = event.target.value;
+            setValue(format === 'time' ? asTime(typed) : format === 'number' ? asNumber(typed) : typed);
             if (outcome?.status === 'wrong' || outcome?.status === 'error') setOutcome(null);
           }}
           placeholder={placeholder ?? (format === 'time' ? 'HH:MM' : undefined)}
-          inputMode={format === 'time' ? 'numeric' : 'text'}
+          inputMode={format === 'text' ? 'text' : 'numeric'}
           maxLength={format === 'time' ? 5 : maxLength}
           autoComplete="off"
           autoCorrect="off"

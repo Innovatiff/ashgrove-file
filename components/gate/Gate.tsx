@@ -13,8 +13,9 @@ export interface GateProps {
    *   threshold   solved the word on the landing page (guards /oath)
    *   oath        signed the oath
    *   a room id   that room is open to them (guards /file/{room})
+   *   verdict     all seven rooms are solved (guards /verdict)
    */
-  need: 'threshold' | 'oath' | RoomId;
+  need: 'threshold' | 'oath' | 'verdict' | RoomId;
   children: ReactNode;
 }
 
@@ -37,7 +38,9 @@ export function Gate({ need, children }: GateProps) {
       ? progress.thresholdSolved
       : need === 'oath'
         ? progress.oathSigned
-        : roomIsOpen(player, need);
+        : need === 'verdict'
+          ? progress.roomsDone
+          : roomIsOpen(player, need);
 
   useEffect(() => {
     if (allowed === false) router.replace(progress.resumeRoute);

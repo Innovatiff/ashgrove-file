@@ -1,11 +1,12 @@
 {
   "_readme": [
-    "Copy this file to answers.json and fill it in. answers.json is git-ignored: it is the only place the codes exist outside Firestore.",
-    "One entry per gate. 'threshold' is the word on the landing page. Every other key is a room id from ROOM_ORDER in functions/src/config/game.ts.",
-    "answer: the code, as you would type it. It is normalised (uppercase, spaces and punctuation stripped, times kept as HH:MM) and stored only as a SHA-256 hash.",
+    "Copy this file to answers.json and fill it in. answers.json is git-ignored: it is the only place the codes exist in the clear outside Firestore.",
+    "One entry per gate. 'threshold' is the word on the landing page. Every other key is a room id from ROOM_ORDER in functions/src/config/game.ts, plus 'verdict' for the accusation.",
+    "answer: the code, as you would type it, or a list of accepted ways of writing it. Each is normalised (uppercase, spaces and punctuation stripped, times kept as HH:MM) and stored only as a SHA-256 hash.",
     "hints: exactly three, cheapest first. They cost 5, 10 and 20 minutes. The threshold has none.",
     "evidence: the cards a solved room gives up. Each id is written to the player's file on success. 'reveal' is the text that replaces the redaction bar.",
-    "Then run: npm run seed:emulator   or   npm run seed:prod"
+    "verdict.answer: the id of one suspect in scripts/content/rooms.ts. verdict.rebuttals: for each of the others, why it was not them. verdict.evidence: the closing account, whose id is VERDICT_DOSSIER.account and whose title is that suspect's name.",
+    "Then run: npm run seed:emulator   or   npm run answers:seal and commit answers.sealed.json, so the deploy can open it."
   ],
   "threshold": {
     "answer": "THE-WORD-ON-THE-DOOR"
@@ -23,6 +24,31 @@
         "title": "Time of death",
         "body": "What the detective now knows, in one line.",
         "reveal": "00:00"
+      }
+    ]
+  },
+  "coroner": {
+    "answer": ["ONE WAY OF WRITING IT", "ANOTHER WAY"],
+    "hints": ["First hint.", "Second hint.", "Third hint."],
+    "evidence": [
+      {
+        "id": "coroner-cause",
+        "title": "Cause of death",
+        "body": "What the detective now knows, in one line.",
+        "reveal": "ONE WAY OF WRITING IT"
+      }
+    ]
+  },
+  "verdict": {
+    "answer": "the-suspect-id",
+    "rebuttals": {
+      "another-suspect-id": "Why it was not them. Shown only to a detective who names them."
+    },
+    "evidence": [
+      {
+        "id": "verdict-account",
+        "title": "The suspect's name, exactly as it is on the wall",
+        "body": "What happened. A blank line starts a new paragraph."
       }
     ]
   }

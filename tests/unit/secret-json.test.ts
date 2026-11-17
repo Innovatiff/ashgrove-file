@@ -255,7 +255,9 @@ describe('turning away what is not a usable key', () => {
   });
 
   it('refuses a private key that lost or changed characters', () => {
-    const lost = { ...KEY, private_key: PEM.replace(BODY.slice(200, 203), '') };
+    const where = PEM.indexOf(BODY.slice(192, 212));
+    assert.ok(where > 0);
+    const lost = { ...KEY, private_key: PEM.slice(0, where + 8) + PEM.slice(where + 11) };
     assert.match(refused(JSON.stringify(lost)), /private key inside it is damaged/);
 
     const swap = BODY[150] === 'A' ? 'B' : 'A';
@@ -273,7 +275,12 @@ describe('turning away what is not a usable key', () => {
   });
 
   it('counts what is wrong with a private key, and shows none of it', () => {
-    const read = readJsonSecret(withoutBackslashes(FILE).replace(BODY.slice(300, 302), ''), { forgiving: true });
+    // Two characters taken out of the key itself, at a known place: a short
+    // run of letters can also turn up earlier in the file by chance.
+    const stripped = withoutBackslashes(FILE);
+    const at = stripped.indexOf(BODY.slice(300, 310));
+    assert.ok(at > 0);
+    const read = readJsonSecret(stripped.slice(0, at) + stripped.slice(at + 2), { forgiving: true });
     assert.ok(read.ok);
     const account = readServiceAccount(read.value);
     assert.ok(!account.ok);

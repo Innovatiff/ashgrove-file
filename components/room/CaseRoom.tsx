@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Clearance } from '@/components/gate/Clearance';
-import { FIGURES } from '@/components/illustrations';
+import { FIGURE_WIDTH, FIGURES } from '@/components/illustrations';
 import { useProgress } from '@/components/providers/ProgressProvider';
+import { Paper } from '@/components/room/Paper';
 import { useEvidence, useRoom } from '@/components/room/useRoom';
+import { WitnessCard } from '@/components/room/WitnessCard';
 import { BlendImage } from '@/components/ui/BlendImage';
 import { CodeInput, type CodeOutcome } from '@/components/ui/CodeInput';
 import { DoubleRule } from '@/components/ui/DoubleRule';
@@ -18,9 +20,12 @@ import { Section } from '@/components/ui/Section';
 import { checkAnswer, describeFailure } from '@/lib/api';
 import type { RoomContent } from '@/lib/content';
 import { track } from '@/lib/firebase';
-import { hourMinute } from '@/lib/format';
+import { cx, hourMinute } from '@/lib/format';
 import { roomOpenedAt } from '@/lib/progress';
-import { isBuilt, nextRoom, ROOM_ORDER, type RoomId, roomNumeral, routeForRoom } from '@/lib/rooms';
+import { isBuilt, nextRoom, ROOM_ORDER, type RoomId, roomNumeral, routeForRoom, VERDICT_ROUTE } from '@/lib/rooms';
+
+/** How many of the three columns a paper takes. Written out so the classes exist. */
+const SPAN = { 1: '', 2: 'md:col-span-2', 3: 'md:col-span-3' } as const;
 
 /**
  * A room of the file, drawn from its Firestore document.
@@ -49,6 +54,8 @@ export function CaseRoom({ room: roomId }: { room: RoomId }) {
   const cards = Object.entries(earned).filter(([, card]) => card.room === roomId);
   const reveal = room.redaction ? earned[room.redaction.evidence]?.reveal : undefined;
   const following = nextRoom(roomId);
+  // The seventh room leads to the accusation, not to another room.
+  const onward = following ? (isBuilt(following) ? routeForRoom(following) : null) : VERDICT_ROUTE;
 
   async function submit(code: string): Promise<CodeOutcome> {
     try {
@@ -127,12 +134,12 @@ export function CaseRoom({ room: roomId }: { room: RoomId }) {
               </Reveal>
             ))}
 
-            {room.next && following ? (
+            {room.next ? (
               <Reveal className="md:col-span-5">
                 <Frame active label="Next" className="h-full">
-                  {isBuilt(following) ? (
+                  {onward ? (
                     <Link
-                      href={routeForRoom(following)}
+                      href={onward}
                       className="flex h-full min-h-[132px] flex-col justify-between gap-6 px-6 pb-6 pt-9"
                       data-testid="next-room"
                     >
@@ -169,26 +176,31 @@ interface OpenRoomProps {
 function OpenRoom({ roomId, room, solved, solvedValue, reveal, hintsTaken, hintPenalty, onSubmit }: OpenRoomProps) {
   const documents = room.documents ?? [];
   const figures = room.figures ?? [];
+  const exhibit = room.scene;
+  const cutout = exhibit?.treatment === 'cutout' ? exhibit : null;
+  // An upright object is shown narrower than an open book.
+  const shape = cutout ? cutout.width / cutout.height : 1;
+  const cutoutWidth = shape >= 1 ? 520 : shape > 0.6 ? 400 : 240;
 
   return (
     <>
       {/* ------------------------------------------------------- scene -- */}
-      {room.scene ? (
+      {exhibit && !cutout ? (
         <div className="measure mt-2 md:-mt-8">
           <Reveal className="mx-auto max-w-[1080px]">
             <BlendImage
               variant="scene"
-              src={room.scene.src}
-              width={room.scene.width}
-              height={room.scene.height}
-              alt={room.scene.alt}
+              src={exhibit.src}
+              width={exhibit.width}
+              height={exhibit.height}
+              alt={exhibit.alt}
               sizes="(min-width: 1128px) 1080px, 134vw"
               aspectNarrow="4 / 3"
               annotation={{
-                label: room.scene.caption,
-                x: room.scene.anchor?.x ?? 50,
-                y: room.scene.anchor?.y ?? 60,
-                side: 'right',
+                label: exhibit.caption,
+                x: exhibit.anchor?.x ?? 50,
+                y: exhibit.anchor?.y ?? 60,
+                side: exhibit.side ?? 'right',
                 drop: 8,
                 run: 36,
               }}
@@ -198,35 +210,73 @@ function OpenRoom({ roomId, room, solved, solvedValue, reveal, hintsTaken, hintP
         </div>
       ) : null}
 
+      {/* ------------------------------------- the object and the person -- */}
+      {cutout || room.witness ? (
+        <div className="measure mt-12 md:mt-16">
+          <div className="grid items-start gap-x-12 gap-y-16 lg:grid-cols-12">
+            {cutout ? (
+              <Reveal className={room.witness ? 'lg:col-span-5' : 'lg:col-span-12'}>
+                <div className="mx-auto w-full" style={{ maxWidth: cutoutWidth }}>
+                  <BlendImage
+                    variant="cutout"
+                    src={cutout.src}
+                    width={cutout.width}
+                    height={cutout.height}
+                    alt={cutout.alt}
+                    sizes={`(min-width: 640px) ${cutoutWidth}px, 86vw`}
+                    annotation={{
+                      label: cutout.caption,
+                      x: cutout.anchor?.x ?? 50,
+                      y: cutout.anchor?.y ?? 60,
+                      side: cutout.side ?? 'right',
+                      drop: 24,
+                      run: 28,
+                    }}
+                    priority
+                  />
+                </div>
+              </Reveal>
+            ) : null}
+
+            {room.witness ? (
+              <Reveal className={cutout ? 'lg:col-span-7' : 'lg:col-span-9'}>
+                <WitnessCard witness={room.witness} />
+              </Reveal>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {/* ------------------------------------------------------ papers -- */}
       <Section labelledBy="papers-title" className="mt-10 py-10 md:mt-12 md:py-14">
         <Reveal>
           <DoubleRule
             id="papers-title"
             title="The Papers"
-            note={`${documents.length} documents · ${figures.length} figures`}
+            note={
+              `${documents.length} ${documents.length === 1 ? 'document' : 'documents'}` +
+              (figures.length > 0 ? ` · ${figures.length} ${figures.length === 1 ? 'figure' : 'figures'}` : '')
+            }
           />
         </Reveal>
 
         <div className="mt-10 grid gap-8 md:grid-cols-3">
           {documents.map((paper) => (
-            <Reveal key={paper.id}>
-              <EvidenceCard label={paper.label} reference={paper.reference}>
-                {paper.body}
-              </EvidenceCard>
+            <Reveal key={paper.id} className={cx(SPAN[paper.span ?? 1], paper.tall && 'md:row-span-2')}>
+              <Paper paper={paper} />
             </Reveal>
           ))}
         </div>
 
         {figures.length > 0 ? (
-          <div className="mt-12 grid items-end gap-x-12 gap-y-10 md:grid-cols-2">
+          <div className={`mt-12 grid items-end gap-x-12 gap-y-10 ${figures.length > 1 ? 'md:grid-cols-2' : ''}`}>
             {figures.map((figure) => {
               const Figure = FIGURES[figure.id];
               if (!Figure) return null;
               return (
                 <Reveal key={figure.id} as="figure">
-                  <div className="mx-auto max-w-[420px]">
-                    <Figure />
+                  <div className="mx-auto" style={{ maxWidth: FIGURE_WIDTH[figure.id] ?? 420 }}>
+                    <Figure title={figure.alt} />
                   </div>
                   <figcaption className="mono muted mt-4 text-center">{figure.caption}</figcaption>
                 </Reveal>

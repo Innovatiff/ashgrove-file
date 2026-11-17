@@ -20,14 +20,20 @@ export { SiteHeader } from '@/components/ui/SiteHeader';
 export { LiveClock } from '@/components/ui/LiveClock';
 
 export {
+  AlphabetStrip,
+  Boardwalk,
   Candle,
   Clock0317,
+  Dipstick,
   FIGURES,
+  FoxgloveSheet,
   HallElevation,
   Illustration,
   Lantern,
   Teacup,
 } from '@/components/illustrations';
+export { Paper } from '@/components/room/Paper';
+export { WitnessCard } from '@/components/room/WitnessCard';
 
 export { Gate, type GateProps } from '@/components/gate/Gate';
 export { useAuth } from '@/components/providers/AuthProvider';

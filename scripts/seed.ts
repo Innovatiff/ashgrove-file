@@ -5,11 +5,16 @@
  *   npm run seed:prod            writes to the live project, after asking
  *
  * What it writes
- *   answers/{gate}     SHA-256 of the normalised answer, the three hint texts,
+ *   answers/{gate}     SHA-256 of the normalised answer (and of any other
+ *                      accepted way of writing it), the three hint texts,
  *                      and the ids of the evidence the gate awards.
  *                      Source: answers.json (local, git-ignored).
+ *   answers/verdict    SHA-256 of the id of the one who did it, and why it
+ *                      was not each of the others. Source: answers.json.
  *   evidence/{id}      What a solved room gives up. Source: answers.json.
  *   rooms/{roomId}     Documents, figures, prompt and image names.
+ *                      Source: scripts/content/rooms.ts.
+ *   rooms/verdict      The five who can be named, and what each said.
  *                      Source: scripts/content/rooms.ts.
  *   stats/global       { entered: 0, closed: 0 }, created only if missing.
  *                      Seeding never resets the live counters.
@@ -34,10 +39,11 @@ import path from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
-import { HINT_TIERS, isGateId, isRoomId, ROOM_ORDER, roomNumeral, THRESHOLD } from '../functions/src/config/game';
-import { hashAnswer, normaliseAnswer } from '../functions/src/lib/answers';
-import { ROOMS } from './content/rooms';
-import type { EvidenceContent, ImageTreatment, RoomContent } from './content/types';
+import { clearedEvidenceId, isRoomId, ROOM_ORDER, roomNumeral, THRESHOLD, VERDICT } from '../functions/src/config/game';
+import { hashAnswer } from '../functions/src/lib/answers';
+import { readAnswers } from './content/answers';
+import { ROOMS, VERDICT_DOSSIER } from './content/rooms';
+import type { ImageTreatment, RoomContent, Suspect, VerdictContent, Witness } from './content/types';
 
 const root = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -74,15 +80,6 @@ async function main(): Promise<void> {
 
   // ------------------------------------------------------------- answers.json ---
 
-  interface EvidenceEntry extends Omit<EvidenceContent, 'room'> {
-    id: string;
-  }
-  interface GateEntry {
-    answer: string;
-    hints?: string[];
-    evidence?: EvidenceEntry[];
-  }
-
   const answersPath = path.resolve(root, value('--answers') ?? 'answers.json');
   if (!existsSync(answersPath)) {
     fail(
@@ -91,48 +88,14 @@ async function main(): Promise<void> {
     );
   }
 
-  let rawAnswers: Record<string, unknown>;
+  let rawAnswers: unknown;
   try {
-    rawAnswers = JSON.parse(await readFile(answersPath, 'utf8')) as Record<string, unknown>;
+    rawAnswers = JSON.parse(await readFile(answersPath, 'utf8'));
   } catch (error) {
     fail(`${path.relative(root, answersPath)} is not valid JSON: ${(error as Error).message}`);
   }
 
-  const problems: string[] = [];
-  const gates = new Map<string, GateEntry>();
-  const isText = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0;
-
-  for (const [key, entry] of Object.entries(rawAnswers)) {
-    if (key.startsWith('_')) continue;
-    if (!isGateId(key)) {
-      problems.push(`"${key}" is not a gate. Use "threshold" or one of: ${ROOM_ORDER.join(', ')}.`);
-      continue;
-    }
-    const gate = entry as Partial<GateEntry> | null;
-    if (!gate || !isText(gate.answer)) {
-      problems.push(`${key}: "answer" is missing.`);
-      continue;
-    }
-    if (normaliseAnswer(gate.answer).length === 0) {
-      problems.push(`${key}: the answer is empty once spaces and punctuation are stripped.`);
-    }
-
-    if (key === THRESHOLD) {
-      if (gate.hints?.length) problems.push('threshold: the door has no hints. Remove "hints".');
-    } else if (!Array.isArray(gate.hints) || gate.hints.length !== HINT_TIERS || !gate.hints.every(isText)) {
-      problems.push(`${key}: "hints" must be exactly ${HINT_TIERS} non-empty strings, cheapest first.`);
-    }
-
-    for (const card of gate.evidence ?? []) {
-      if (!isText(card?.id) || !/^[a-z0-9][a-z0-9-]*$/.test(card.id)) {
-        problems.push(`${key}: every evidence card needs an "id" of lowercase letters, digits and hyphens.`);
-      } else if (!isText(card.title) || !isText(card.body)) {
-        problems.push(`${key}: evidence "${card.id}" needs a "title" and a "body".`);
-      }
-    }
-
-    gates.set(key, gate as GateEntry);
-  }
+  const { gates, verdict, problems } = readAnswers(rawAnswers);
 
   // ------------------------------------------------------------ room content ---
 
@@ -143,11 +106,25 @@ async function main(): Promise<void> {
     ? JSON.parse(await readFile(imagesPath, 'utf8'))
     : {};
 
+  /** Swaps a portrait's image name for the file's path and real size. */
+  function portrait<T extends { image: string }>(
+    where: string,
+    source: T,
+  ): (Omit<T, 'image'> & Pick<Witness, 'src' | 'width' | 'height'>) | null {
+    const { image: name, ...rest } = source;
+    const image = images[name];
+    if (!image) {
+      problems.push(`${where}: image "${name}" is not in images.generated.json. Run: npm run images`);
+      return null;
+    }
+    return { ...rest, src: image.src, width: image.width, height: image.height };
+  }
+
   const rooms = new Map<string, RoomContent & { id: string; index: number; numeral: string }>();
 
   for (const [roomId, source] of Object.entries(ROOMS)) {
     if (!isRoomId(roomId) || !source) continue;
-    const { scene: sceneSource, ...rest } = source;
+    const { scene: sceneSource, witness: witnessSource, ...rest } = source;
     const room: RoomContent = { ...rest };
 
     if (sceneSource) {
@@ -160,18 +137,38 @@ async function main(): Promise<void> {
       }
     }
 
+    if (witnessSource) {
+      const witness = portrait(roomId, witnessSource);
+      if (witness) room.witness = witness;
+    }
+
+    for (const paper of source.documents ?? []) {
+      if (!paper.body && !paper.table && !paper.cipher) {
+        problems.push(`${roomId}: paper "${paper.id}" has no text, no ledger and no cipher.`);
+      }
+      for (const row of paper.table?.rows ?? []) {
+        if (row.cells.length !== paper.table?.columns.length) {
+          problems.push(`${roomId}: a row of "${paper.id}" does not have one cell for every column.`);
+        }
+      }
+    }
+
     const gate = gates.get(roomId);
     if (source.status === 'open' && !gate) {
       problems.push(`${roomId}: the room is open but has no entry in the answers file, so it could never be solved.`);
     }
-    if (source.redaction && !gate?.evidence?.some((card) => card.id === source.redaction?.evidence)) {
+    if (source.redaction && !gate?.evidence.some((card) => card.id === source.redaction?.evidence)) {
       problems.push(
         `${roomId}: the redaction points at evidence "${source.redaction.evidence}", which the answers file does not define.`,
       );
     }
     // The room is readable before it is solved. It must not hold its own answer.
-    if (gate && isText(gate.answer) && gate.answer.trim().length >= 3 && JSON.stringify(source).includes(gate.answer.trim())) {
-      problems.push(`${roomId}: the room content contains the answer in plain text. Move it out of scripts/content/rooms.ts.`);
+    const written = JSON.stringify(source);
+    for (const answer of gate?.answers ?? []) {
+      if (answer.length >= 3 && written.includes(answer)) {
+        problems.push(`${roomId}: the room content contains the answer in plain text. Move it out of scripts/content/rooms.ts.`);
+        break;
+      }
     }
 
     rooms.set(roomId, { ...room, id: roomId, index: ROOM_ORDER.indexOf(roomId) + 1, numeral: roomNumeral(roomId) });
@@ -184,17 +181,58 @@ async function main(): Promise<void> {
   }
   if (!gates.has(THRESHOLD)) problems.push('threshold: the answers file has no word for the door.');
 
+  // ---------------------------------------------------------- the accusation ---
+
+  // The accusation is catalogued once every one of the seven rooms is open.
+  const everyRoomOpen = ROOM_ORDER.every((room) => ROOMS[room]?.status === 'open');
+  let dossier: (VerdictContent & { id: string }) | null = null;
+
+  if (everyRoomOpen) {
+    const suspects: Suspect[] = [];
+    for (const source of VERDICT_DOSSIER.suspects) {
+      const suspect = portrait(`verdict: ${source.id}`, source);
+      if (suspect) suspects.push(suspect);
+    }
+    const ids = suspects.map((suspect) => suspect.id);
+    dossier = { ...VERDICT_DOSSIER, suspects, id: VERDICT };
+
+    if (!verdict) {
+      problems.push('verdict: every room is open, but the answers file does not say who did it.');
+    } else {
+      if (!ids.includes(verdict.answer)) {
+        problems.push(`verdict: the answer must be the id of a suspect on the wall: ${ids.join(', ')}.`);
+      }
+      for (const id of ids) {
+        if (id !== verdict.answer && !verdict.rebuttals[id]) {
+          problems.push(`verdict: there is no rebuttal for "${id}". A detective who names them must be told why not.`);
+        }
+      }
+      const account = verdict.evidence.find((card) => card.id === VERDICT_DOSSIER.account);
+      const named = suspects.find((suspect) => suspect.id === verdict.answer);
+      if (!account) {
+        problems.push(`verdict: the closing account "${VERDICT_DOSSIER.account}" is not among the verdict's evidence.`);
+      } else if (named && account.title !== named.name) {
+        // The page finds the photograph to pin beside the account by this name.
+        problems.push('verdict: the closing account must be titled with the name of the one who did it, exactly as it is on the wall.');
+      }
+    }
+  } else if (verdict) {
+    problems.push('verdict: the answers file names someone, but not every room is open yet.');
+  }
+
   if (problems.length > 0) fail(problems.map((p) => `  - ${p}`).join('\n'));
 
   // -------------------------------------------------------------------- plan ---
 
-  const evidenceCount = [...gates.values()].reduce((n, g) => n + (g.evidence?.length ?? 0), 0);
+  const evidenceCount =
+    [...gates.values()].reduce((n, g) => n + g.evidence.length, 0) + (verdict?.evidence.length ?? 0);
   console.log(`\nTHE ASHGROVE FILE / SEED`);
   console.log(`  target    ${toEmulator ? 'EMULATOR' : 'PRODUCTION'}`);
   console.log(`  project   ${projectId}`);
   console.log(`  answers   ${[...gates.keys()].join(', ')}   (hashes only, the codes are not stored)`);
+  console.log(`  verdict   ${dossier ? `catalogued, ${dossier.suspects.length} on the wall` : 'not yet: a room is still sealed'}`);
   console.log(`  evidence  ${evidenceCount} card(s)`);
-  console.log(`  rooms     ${[...rooms.values()].map((r) => `${r.id} [${r.status}]`).join(', ')}`);
+  console.log(`  rooms     ${[...rooms.values()].map((r) => `${r.id} (${r.status})`).join(', ')}`);
 
   if (dryRun) {
     console.log('\nDry run. Everything is valid. Nothing was written.\n');
@@ -234,19 +272,45 @@ async function main(): Promise<void> {
   const stamp = FieldValue.serverTimestamp();
 
   for (const [gate, entry] of gates) {
+    const [first = '', ...others] = entry.answers;
     batch.set(db.collection('answers').doc(gate), {
-      hash: hashAnswer(entry.answer),
+      hash: hashAnswer(first),
+      // Other ways of writing the same answer. Never the answer itself.
+      ...(others.length > 0 ? { hashes: others.map(hashAnswer) } : {}),
       ...(gate === THRESHOLD ? {} : { hints: entry.hints }),
-      awards: (entry.evidence ?? []).map((card) => card.id),
+      awards: entry.evidence.map((card) => card.id),
       updatedAt: stamp,
     });
-    for (const { id, ...card } of entry.evidence ?? []) {
+    for (const { id, ...card } of entry.evidence) {
       batch.set(db.collection('evidence').doc(id), { ...card, room: gate, updatedAt: stamp });
     }
   }
 
   for (const [roomId, room] of rooms) {
     batch.set(db.collection('rooms').doc(roomId), { ...room, updatedAt: stamp });
+  }
+
+  if (dossier && verdict) {
+    batch.set(db.collection('answers').doc(VERDICT), {
+      hash: hashAnswer(verdict.answer),
+      suspects: dossier.suspects.map((suspect) => suspect.id),
+      rebuttals: verdict.rebuttals,
+      awards: verdict.evidence.map((card) => card.id),
+      updatedAt: stamp,
+    });
+    for (const { id, ...card } of verdict.evidence) {
+      batch.set(db.collection('evidence').doc(id), { ...card, room: VERDICT, updatedAt: stamp });
+    }
+    // Why it was not each of the others: a card a detective earns by naming them.
+    for (const [suspect, body] of Object.entries(verdict.rebuttals)) {
+      batch.set(db.collection('evidence').doc(clearedEvidenceId(suspect)), {
+        room: VERDICT,
+        title: 'Cleared',
+        body,
+        updatedAt: stamp,
+      });
+    }
+    batch.set(db.collection('rooms').doc(VERDICT), { ...dossier, updatedAt: stamp });
   }
 
   try {

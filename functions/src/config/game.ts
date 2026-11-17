@@ -27,9 +27,23 @@ export type GateId = typeof THRESHOLD | RoomId;
 
 export const ROOM_COUNT = ROOM_ORDER.length;
 
+/**
+ * The accusation is not a room either. It has no code and no hints: it has a
+ * name, three chances, and the papers on the five people who could be named.
+ */
+export const VERDICT = 'verdict';
+
+/**
+ * The id of the evidence card a detective is given when they name the wrong
+ * person: why it was not them. It stays on the file, so it can be read again.
+ */
+export function clearedEvidenceId(suspect: string): string {
+  return `cleared-${suspect}`;
+}
+
 export const THRESHOLD_ROUTE = '/';
 export const OATH_ROUTE = '/oath';
-/** Where the seventh room leads. Not built yet. */
+/** Where the seventh room leads: the accusation. */
 export const VERDICT_ROUTE = '/verdict';
 
 /** Minutes added to a player's time for hint tiers 1, 2 and 3. */
@@ -41,6 +55,25 @@ export const ATTEMPT_LIMIT = 10;
 export const ATTEMPT_WINDOW_MS = 60_000;
 
 export const STARTING_ACCUSATIONS = 3;
+
+/**
+ * Every detective who closes the case is ranked on what it cost them: the
+ * minutes their hints added, and thirty more for each accusation that missed.
+ * The clock is shown beside the rank but does not change it, so a detective
+ * who sleeps on Room V is not marked down for sleeping.
+ */
+export const RANKS = ['Constable', 'Sergeant', 'Inspector', 'Chief Inspector', 'Warden-Breaker'] as const;
+export type Rank = (typeof RANKS)[number];
+export const MISSED_ACCUSATION_MINUTES = 30;
+
+export function rankFor(hintPenalty: number, missedAccusations: number): Rank {
+  const cost = Math.max(0, hintPenalty) + Math.max(0, missedAccusations) * MISSED_ACCUSATION_MINUTES;
+  if (cost === 0) return 'Warden-Breaker';
+  if (cost <= 15) return 'Chief Inspector';
+  if (cost <= 60) return 'Inspector';
+  if (cost <= 120) return 'Sergeant';
+  return 'Constable';
+}
 export const MAX_NAME_LENGTH = 24;
 export const MAX_ANSWER_LENGTH = 64;
 

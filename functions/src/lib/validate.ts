@@ -41,6 +41,15 @@ export function parseTier(data: unknown, tiers: number): number {
   return tier;
 }
 
+/** The id of a person on the wall. Checked against the file, not against a list in code. */
+export function parseSuspect(data: unknown): string {
+  const suspect = field(data, 'suspect');
+  if (typeof suspect !== 'string' || !/^[a-z][a-z0-9-]{0,31}$/.test(suspect)) {
+    throw new HttpsError('invalid-argument', 'Name one of the five.');
+  }
+  return suspect;
+}
+
 // Letters and digits from any script, plus the punctuation real names carry.
 const NAME = /^[\p{L}\p{N}][\p{L}\p{N} .'’-]*$/u;
 

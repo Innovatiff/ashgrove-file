@@ -7,6 +7,10 @@
  *   1. a player cannot read a locked room,
  *   2. a player cannot read answers,
  *   3. a player cannot write their own progress.
+ *
+ * And the same three for the accusation: the wall stays shut until the
+ * seventh room is solved, who did it is never readable, and nobody can
+ * close their own case.
  */
 
 import assert from 'node:assert/strict';
@@ -68,6 +72,39 @@ const PLAYERS: Record<string, Record<string, unknown> | null> = {
   },
   // A document written before the oath field existed must still be locked out.
   malformed: { solved: { threshold: NOW } },
+  // Six rooms solved. The seventh is open, the accusation is not.
+  solvedSix: {
+    detectiveName: 'Tom Reeve',
+    badge: 'ASH-0419',
+    oathAt: NOW,
+    solved: { threshold: NOW, study: NOW, coroner: NOW, herbarium: NOW, journal: NOW, register: NOW, marsh: NOW },
+    evidence: ['study-time-of-death'],
+    hintPenalty: 0,
+    accusationsLeft: 3,
+  },
+  // All seven solved, one accusation spent on the wrong person.
+  solvedAll: {
+    detectiveName: 'Nell Garth',
+    badge: 'ASH-0420',
+    oathAt: NOW,
+    solved: { threshold: NOW, study: NOW, coroner: NOW, herbarium: NOW, journal: NOW, register: NOW, marsh: NOW, lamp: NOW },
+    evidence: ['study-time-of-death', 'cleared-suspect-a'],
+    hintPenalty: 0,
+    accusationsLeft: 2,
+    accused: ['suspect-a'],
+  },
+  // The right name given. The case is closed.
+  closed: {
+    detectiveName: 'Wil Sykes',
+    badge: 'ASH-0421',
+    oathAt: NOW,
+    solved: { threshold: NOW, study: NOW, coroner: NOW, herbarium: NOW, journal: NOW, register: NOW, marsh: NOW, lamp: NOW, verdict: NOW },
+    evidence: ['study-time-of-death', 'verdict-account'],
+    hintPenalty: 0,
+    accusationsLeft: 3,
+    closedAt: NOW,
+    rank: 'Warden-Breaker',
+  },
 };
 
 let env: RulesTestEnvironment;
@@ -99,6 +136,15 @@ beforeEach(async () => {
     await setDoc(doc(db, 'answers', 'threshold'), { hash: 'aa' });
     await setDoc(doc(db, 'answers', 'study'), { hash: 'bb', hints: ['one', 'two', 'three'] });
     await setDoc(doc(db, 'evidence', 'study-time-of-death'), { title: 'Time of death', reveal: '00:00' });
+    await setDoc(doc(db, 'rooms', 'verdict'), { title: 'THE WALL', suspects: [{ id: 'suspect-a' }, { id: 'suspect-b' }] });
+    await setDoc(doc(db, 'answers', 'verdict'), {
+      hash: 'cc',
+      suspects: ['suspect-a', 'suspect-b'],
+      rebuttals: { 'suspect-a': 'Not them.' },
+    });
+    await setDoc(doc(db, 'evidence', 'verdict-account'), { title: 'Who did it', body: 'How it was done.' });
+    await setDoc(doc(db, 'evidence', 'cleared-suspect-a'), { title: 'Cleared', body: 'Not them.' });
+    await setDoc(doc(db, 'evidence', 'cleared-suspect-c'), { title: 'Cleared', body: 'Not them either.' });
     await setDoc(doc(db, 'badges', 'ASH-0417'), { uid: 'sworn' });
     await setDoc(doc(db, 'stats', 'global'), { entered: 2, closed: 0 });
   });
@@ -218,6 +264,51 @@ describe('3. a player cannot write their own progress', () => {
 
   it('denies writing to another player', async () => {
     await assertFails(updateDoc(doc(as('sworn'), 'players', 'solvedStudy'), { hintPenalty: 999 }));
+  });
+});
+
+describe('4. the accusation', () => {
+  it('keeps the wall shut until the seventh room is solved', async () => {
+    for (const uid of ['stranger', 'atDoor', 'pastDoor', 'sworn', 'solvedStudy', 'solvedSix', 'malformed']) {
+      await assertFails(getDoc(doc(as(uid), 'rooms', 'verdict')));
+    }
+    await assertFails(getDoc(doc(anonymous(), 'rooms', 'verdict')));
+  });
+
+  it('opens the wall once all seven rooms are solved', async () => {
+    const snap = await assertSucceeds(getDoc(doc(as('solvedAll'), 'rooms', 'verdict')));
+    assert.equal(snap.get('title'), 'THE WALL');
+    await assertSucceeds(getDoc(doc(as('closed'), 'rooms', 'verdict')));
+  });
+
+  it('never lets anyone read who did it, or why it was not the others', async () => {
+    for (const uid of ['sworn', 'solvedSix', 'solvedAll', 'closed']) {
+      await assertFails(getDoc(doc(as(uid), 'answers', 'verdict')));
+    }
+    await assertFails(getDoc(doc(anonymous(), 'answers', 'verdict')));
+  });
+
+  it('keeps the closing account from a detective who has not closed the case', async () => {
+    await assertFails(getDoc(doc(as('solvedAll'), 'evidence', 'verdict-account')));
+    await assertFails(getDoc(doc(as('solvedSix'), 'evidence', 'verdict-account')));
+    const snap = await assertSucceeds(getDoc(doc(as('closed'), 'evidence', 'verdict-account')));
+    assert.equal(snap.get('title'), 'Who did it');
+  });
+
+  it('gives the reason it was not someone only to a detective who named them', async () => {
+    await assertSucceeds(getDoc(doc(as('solvedAll'), 'evidence', 'cleared-suspect-a')));
+    await assertFails(getDoc(doc(as('solvedAll'), 'evidence', 'cleared-suspect-c')));
+    await assertFails(getDoc(doc(as('solvedSix'), 'evidence', 'cleared-suspect-a')));
+  });
+
+  it('denies closing your own case, ranking yourself or taking an accusation back', async () => {
+    const mine = doc(as('solvedAll'), 'players', 'solvedAll');
+    await assertFails(updateDoc(mine, { closedAt: NOW }));
+    await assertFails(updateDoc(mine, { rank: 'Warden-Breaker' }));
+    await assertFails(updateDoc(mine, { accusationsLeft: 3 }));
+    await assertFails(updateDoc(mine, { accused: [] }));
+    await assertFails(updateDoc(mine, { evidence: arrayUnion('verdict-account') }));
+    await assertFails(updateDoc(mine, { 'solved.verdict': NOW }));
   });
 });
 

@@ -31,6 +31,8 @@ service cloud.firestore {
     // ROOM ORDER.
     // Each room, and the room that must be solved before it opens. Room I
     // ('study') is not listed: it opens with the oath, not with a room.
+    // The last line is not a room. 'verdict' is the dossier for the
+    // accusation, and it opens when the seventh room is solved.
     // Keep this in step with ROOM_ORDER in functions/src/config/game.ts.
     // tests/unit/room-order.test.ts fails if the two disagree.
     function roomBefore() {
@@ -40,7 +42,8 @@ service cloud.firestore {
         'journal': 'herbarium',
         'register': 'journal',
         'marsh': 'register',
-        'lamp': 'marsh'
+        'lamp': 'marsh',
+        'verdict': 'lamp'
       };
     }
 

@@ -71,7 +71,9 @@ export const checkAnswer = onCall(CALLABLE, async (request): Promise<CheckAnswer
       ? { count: previous.count + 1, windowStart: previous.windowStart }
       : { count: 1, windowStart: now };
 
-    const correct = hashesMatch(candidate, stored.hash);
+    // A room may accept more than one way of writing its answer.
+    const accepted = [stored.hash, ...(Array.isArray(stored.hashes) ? stored.hashes : [])];
+    const correct = accepted.some((hash) => typeof hash === 'string' && hashesMatch(candidate, hash));
     const firstSolve = correct && !player?.solved?.[gate];
     const awards = Array.isArray(stored.awards) ? stored.awards.filter((id) => typeof id === 'string') : [];
 

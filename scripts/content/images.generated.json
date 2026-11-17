@@ -1,0 +1,92 @@
+{
+  "hero-hall": {
+    "src": "/images/hero-hall.webp",
+    "width": 2400,
+    "height": 1030,
+    "treatment": "scene"
+  },
+  "ember-warden": {
+    "src": "/images/ember-warden.webp",
+    "width": 1350,
+    "height": 2400,
+    "treatment": "scene"
+  },
+  "study-scene": {
+    "src": "/images/study-scene.webp",
+    "width": 2400,
+    "height": 1350,
+    "treatment": "scene"
+  },
+  "marsh-lamps": {
+    "src": "/images/marsh-lamps.webp",
+    "width": 2400,
+    "height": 1030,
+    "treatment": "scene"
+  },
+  "clock-0317": {
+    "src": "/images/clock-0317.webp",
+    "width": 2167,
+    "height": 2400,
+    "treatment": "cutout"
+  },
+  "foxglove": {
+    "src": "/images/foxglove.webp",
+    "width": 1635,
+    "height": 2400,
+    "treatment": "cutout"
+  },
+  "coroner-report": {
+    "src": "/images/coroner-report.webp",
+    "width": 2011,
+    "height": 2400,
+    "treatment": "cutout"
+  },
+  "journal": {
+    "src": "/images/journal.webp",
+    "width": 2400,
+    "height": 1561,
+    "treatment": "cutout"
+  },
+  "parish-register": {
+    "src": "/images/parish-register.webp",
+    "width": 2400,
+    "height": 1696,
+    "treatment": "cutout"
+  },
+  "lamp-7": {
+    "src": "/images/lamp-7.webp",
+    "width": 994,
+    "height": 2400,
+    "treatment": "cutout"
+  },
+  "suspect-margot": {
+    "src": "/images/suspect-margot.webp",
+    "width": 1797,
+    "height": 2400,
+    "treatment": "portrait"
+  },
+  "suspect-crane": {
+    "src": "/images/suspect-crane.webp",
+    "width": 1797,
+    "height": 2400,
+    "treatment": "portrait"
+  },
+  "suspect-tobias": {
+    "src": "/images/suspect-tobias.webp",
+    "width": 1797,
+    "height": 2400,
+    "treatment": "portrait"
+  },
+  "suspect-iris": {
+    "src": "/images/suspect-iris.webp",
+    "width": 1797,
+    "height": 2400,
+    "treatment": "portrait"
+  },
+  "suspect-pike": {
+    "src": "/images/suspect-pike.webp",
+    "width": 1797,
+    "height": 2400,
+    "treatment": "portrait"
+  }
+}

@@ -207,7 +207,8 @@ rm key.json
 | Cloud Datastore Index Admin | Deploying `firestore.indexes.json` |
 
 **2. Add two secrets to the repository.** On GitHub: **Settings → Secrets and
-variables → Actions → New repository secret**.
+variables → Actions → New repository secret**
+([direct link](https://github.com/Innovatiff/ashgrove-file/settings/secrets/actions/new)).
 
 | Name | Value |
 | --- | --- |
@@ -218,8 +219,15 @@ Secrets are encrypted and cannot be read back, and nothing in the workflow
 prints them. The key can deploy to your project, so treat it like a password.
 To revoke it, delete it under **IAM → Service accounts → github-deploy → Keys**.
 
-**3. Run it.** On GitHub: **Actions → Deploy to Firebase → Run workflow**.
-Leave all four boxes ticked the first time.
+**3. Run it.** Open the workflow's own page:
+[Deploy to Firebase](https://github.com/Innovatiff/ashgrove-file/actions/workflows/deploy.yml).
+Click **Run workflow** and leave all four boxes ticked the first time.
+
+If you go through the **Actions** tab instead, look in the left sidebar. The
+middle of that page lists runs, and it stays empty until the first one. On a
+phone or a narrow window the sidebar is tucked away, so use the link. The
+**Run workflow** button only appears when you are signed in to GitHub as the
+owner of the repository.
 
 | Box | What it does |
 | --- | --- |

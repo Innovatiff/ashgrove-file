@@ -195,9 +195,10 @@ gcloud iam service-accounts keys create key.json --iam-account github-deploy@ash
 
 The last command prints the key. Copy all of it, from the first `{` to the
 last `}`. The long line in the middle shows up broken across many rows. That
-is fine, and so is a stray line above or below it: the workflow repairs both.
-It cannot repair a missing piece, so take all of it. Once it is saved in
-GitHub (next step), remove the copy:
+is fine, and so is a stray line above or below it: the workflow repairs both,
+and proves the repaired key works before it uses it. Still take all of it. A
+piece that went missing can only sometimes be worked out again. Once it is
+saved in GitHub (next step), remove the copy:
 
 ```bash
 rm key.json

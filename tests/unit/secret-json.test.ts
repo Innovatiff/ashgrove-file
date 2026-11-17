@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createPrivateKey, generateKeyPairSync } from 'node:crypto';
+import { createPrivateKey, createPublicKey, generateKeyPairSync, sign, verify } from 'node:crypto';
 import { describe, it } from 'node:test';
 import { describeSecret, guessMistake, readJsonSecret, readServiceAccount } from '../../scripts/lib/secret-json.mjs';
 
@@ -176,6 +176,77 @@ describe('reading a pasted service account key', () => {
   });
 });
 
+describe('a key that lost a stretch of itself', () => {
+  // Where each number of a 2048-bit key sits in its text: n to about 392,
+  // d to 746, p to 922, q to 1098, then the three derived numbers.
+  const gapped = (at: number, size = 32) => {
+    const body = BODY.slice(0, at) + BODY.slice(at + size);
+    return `-----BEGIN PRIVATE KEY-----\n${(body.match(/.{1,64}/g) ?? []).join('\n')}\n-----END PRIVATE KEY-----\n`;
+  };
+  const read = (pem: string) => {
+    const json = readJsonSecret(JSON.stringify({ ...KEY, private_key: pem }), { forgiving: true });
+    assert.ok(json.ok);
+    return readServiceAccount(json.value);
+  };
+  /** Same public half, and what one signs the other accepts. */
+  const samePair = (pem: string) => {
+    const probe = Buffer.from('the file is still open');
+    const publicDer = (key: string) => createPublicKey(key).export({ type: 'spki', format: 'der' });
+    return publicDer(pem).equals(publicDer(PEM)) && verify('sha256', probe, createPublicKey(PEM), sign('sha256', probe, createPrivateKey(pem)));
+  };
+
+  it('rebuilds the copy that reached the first real run', () => {
+    // One line of the key at half its length, and the long line broken up by
+    // a terminal 153 columns wide.
+    const at = FILE.indexOf(BODY.slice(1030, 1062));
+    assert.ok(at > 0, 'the stretch should sit inside one line of the key');
+    const damaged = wrapped(FILE.slice(0, at) + FILE.slice(at + 32), 153);
+    assert.match(accepted(damaged) ?? '', /rejoined.*worked out the piece of the private key that was missing/);
+  });
+
+  it('rebuilds the very same key when the gap comes after the first prime', () => {
+    for (const at of [1024, 1030, 1056, 1150, 1330, 1500, BODY.length - 40]) {
+      const account = read(gapped(at));
+      assert.ok(account.ok, `a gap at ${at} should be repairable`);
+      assert.ok(der(account.key.private_key).equals(der(PEM)), `a gap at ${at} should give back the same key`);
+      assert.match(account.repair ?? '', /worked out the piece/);
+    }
+  });
+
+  it('finds the primes again when the gap took one of them', () => {
+    for (const at of [800, 905]) {
+      const account = read(gapped(at));
+      assert.ok(account.ok, `a gap at ${at} should be repairable`);
+      assert.ok(samePair(account.key.private_key), `a gap at ${at} should give back the same key pair`);
+    }
+  });
+
+  it('rebuilds across gaps of other sizes', () => {
+    for (const size of [1, 7, 64, 200]) {
+      const account = read(gapped(1100, size));
+      assert.ok(account.ok, `a gap of ${size} should be repairable`);
+      assert.ok(der(account.key.private_key).equals(der(PEM)));
+    }
+  });
+
+  it('refuses when the gap is in a part nothing else repeats', () => {
+    for (const at of [100, 200, 420, 600]) {
+      const account = read(gapped(at));
+      assert.ok(!account.ok, `a gap at ${at} cannot be repaired`);
+      assert.match(account.reason, /private key inside it is damaged/);
+    }
+  });
+
+  it('never passes a key that is not the one in the file', () => {
+    // The first prime swapped for another key's: every number reads, nothing fits.
+    const other = generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
+    const otherBody = other.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+    const mixed = BODY.slice(0, 760) + otherBody.slice(760, 900) + BODY.slice(900);
+    const account = read(`-----BEGIN PRIVATE KEY-----\n${mixed}\n-----END PRIVATE KEY-----\n`);
+    if (account.ok) assert.ok(samePair(account.key.private_key), 'a repair may only ever give back the real key');
+  });
+});
+
 describe('turning away what is not a usable key', () => {
   it('refuses a file that was cut off', () => {
     assert.match(refused(FILE.slice(0, 1500)), /cut off before the end of the private key/);
@@ -208,7 +279,8 @@ describe('turning away what is not a usable key', () => {
     assert.ok(!account.ok);
     const facts = (account.facts ?? []).join('\n');
     assert.match(facts, /line breaks in it: 0, and 0 more still written out as backslash-n/);
-    assert.match(facts, /key material between its markers: 1649 characters/);
+    // The key material, less the two characters taken out, plus an "n" for each of its 27 line breaks.
+    assert.ok(facts.includes(`key material between its markers: ${BODY.length - 2 + 27} characters`), facts);
     for (let from = 0; from + 24 <= BODY.length; from += 24) assert.ok(!facts.includes(BODY.slice(from, from + 24)));
     assert.doesNotMatch(facts, /[{}[\]]/);
   });

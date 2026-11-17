@@ -6,6 +6,10 @@
 // no longer JSON. This module repairs what can be repaired, and when it
 // cannot, describes what arrived without ever showing any of it.
 //
+// Every repair is proven before it is used: the private key that comes out
+// has to sign something its own public half accepts. Guessing wrong cannot
+// produce a working key, so a repair either gives back the real key or fails.
+//
 // Nothing here may print or return a piece of the secret in a message. The
 // messages also avoid braces and square brackets: GitHub hides every line of
 // a multi-line secret wherever it appears in a log, and a pretty-printed JSON
@@ -154,6 +158,157 @@ function keyMaterial(value) {
   return { label: match[1] ? 'RSA PRIVATE KEY' : 'PRIVATE KEY', material: (match[2] ?? '').replace(/[^A-Za-z0-9+/=]/g, '') };
 }
 
+// ------------------------------------------------- a key with a gap in it ---
+//
+// An RSA private key holds the same secret several times over: the modulus n,
+// the exponents e and d, the primes p and q, and three numbers worked out from
+// those. They are stored in that order. When a stretch of the key is lost,
+// every number before the gap still reads correctly, and the rest follows from
+// them: q is n divided by p, and if p is gone too, n can be factored from e
+// and d. So a key that lost a piece anywhere after d can be rebuilt exactly.
+//
+// The result is proven like any other reading: it has to sign something its
+// own public half accepts. After that, Google has to accept it as well.
+
+const toNumber = (bytes) => (bytes.length === 0 ? 0n : BigInt(`0x${Buffer.from(bytes).toString('hex')}`));
+
+function toBase64Url(number) {
+  const hex = number.toString(16);
+  return Buffer.from(hex.length % 2 === 0 ? hex : `0${hex}`, 'hex').toString('base64url');
+}
+
+/** One DER header: what follows, and where its contents start and end. */
+function derHeader(bytes, at) {
+  if (at + 2 > bytes.length) return null;
+  const tag = bytes[at];
+  const first = bytes[at + 1];
+  if (first < 0x80) return { tag, start: at + 2, end: at + 2 + first };
+  const count = first & 0x7f;
+  if (count === 0 || count > 3 || at + 2 + count > bytes.length) return null;
+  let length = 0;
+  for (let index = 0; index < count; index += 1) length = length * 256 + bytes[at + 2 + index];
+  return { tag, start: at + 2 + count, end: at + 2 + count + length };
+}
+
+/** The numbers of an RSA key, in order, for as long as they can be read. */
+function rsaNumbers(bytes, wrapped) {
+  const SEQUENCE = 0x30;
+  const INTEGER = 0x02;
+  const OCTETS = 0x04;
+  let at = 0;
+
+  if (wrapped) {
+    // PKCS#8 puts the key in a box: a version, the algorithm, then the key.
+    const outer = derHeader(bytes, at);
+    const version = outer?.tag === SEQUENCE ? derHeader(bytes, outer.start) : null;
+    const algorithm = version?.tag === INTEGER ? derHeader(bytes, version.end) : null;
+    const box = algorithm?.tag === SEQUENCE ? derHeader(bytes, algorithm.end) : null;
+    if (box?.tag !== OCTETS) return [];
+    at = box.start;
+  }
+
+  const key = derHeader(bytes, at);
+  if (key?.tag !== SEQUENCE) return [];
+  at = key.start;
+
+  const numbers = [];
+  while (numbers.length < 9) {
+    const header = derHeader(bytes, at);
+    if (!header || header.tag !== INTEGER || header.end > bytes.length) break;
+    numbers.push(toNumber(bytes.subarray(header.start, header.end)));
+    at = header.end;
+  }
+  return numbers; // version, n, e, d, p, q, and the three derived numbers
+}
+
+function modPow(base, exponent, modulus) {
+  let result = 1n;
+  let power = base % modulus;
+  for (let left = exponent; left > 0n; left >>= 1n) {
+    if (left & 1n) result = (result * power) % modulus;
+    power = (power * power) % modulus;
+  }
+  return result;
+}
+
+function gcd(a, b) {
+  while (b !== 0n) [a, b] = [b, a % b];
+  return a;
+}
+
+/** The number that times `a` leaves 1 when divided by `m`, or null. */
+function modInverse(a, m) {
+  let [r0, r1] = [m, a % m];
+  let [t0, t1] = [0n, 1n];
+  while (r1 !== 0n) {
+    const quotient = r0 / r1;
+    [r0, r1] = [r1, r0 - quotient * r1];
+    [t0, t1] = [t1, t0 - quotient * t1];
+  }
+  return r0 === 1n ? ((t0 % m) + m) % m : null;
+}
+
+/** A prime factor of n, found from the two exponents alone. */
+function factorFrom(n, e, d) {
+  let odd = e * d - 1n;
+  let twos = 0;
+  if (odd <= 0n) return null;
+  while ((odd & 1n) === 0n) {
+    odd >>= 1n;
+    twos += 1;
+  }
+  for (const base of [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n]) {
+    let root = modPow(base, odd, n);
+    if (root === 1n || root === n - 1n) continue;
+    for (let step = 0; step < twos; step += 1) {
+      const next = (root * root) % n;
+      if (next === 1n) {
+        const factor = gcd(root - 1n, n);
+        return factor > 1n && factor < n ? factor : null;
+      }
+      if (next === n - 1n) break;
+      root = next;
+    }
+  }
+  return null;
+}
+
+/** A whole key, worked out from the numbers that survive in a damaged one. */
+function rebuiltKey(label, material) {
+  const [, n, e, d, p] = rsaNumbers(Buffer.from(material, 'base64'), label === 'PRIVATE KEY');
+  if (n === undefined || e === undefined || d === undefined) return null;
+  const bits = n.toString(2).length;
+  if (bits < 1024 || bits > 8192 || e < 3n || e > 0xffffffffn || d < 3n || d >= n) return null;
+
+  let prime = p !== undefined && p > 1n && p < n && n % p === 0n ? p : null;
+  if (!prime) {
+    // p went with the gap. Factor n, and keep the larger prime first, as key files do.
+    const factor = factorFrom(n, e, d);
+    if (!factor) return null;
+    prime = factor > n / factor ? factor : n / factor;
+  }
+  const other = n / prime;
+  const inverse = modInverse(other, prime);
+  if (other <= 1n || inverse === null) return null;
+
+  try {
+    const jwk = {
+      kty: 'RSA',
+      n: toBase64Url(n),
+      e: toBase64Url(e),
+      d: toBase64Url(d),
+      p: toBase64Url(prime),
+      q: toBase64Url(other),
+      dp: toBase64Url(d % (prime - 1n)),
+      dq: toBase64Url(d % (other - 1n)),
+      qi: toBase64Url(inverse),
+    };
+    return createPrivateKey({ key: jwk, format: 'jwk' }).export({ type: 'pkcs8', format: 'pem' });
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Rebuilds a private key from whatever damage its layout has taken, and
  * proves the result by signing with it. A wrong guess cannot pass that.
@@ -180,6 +335,12 @@ export function readPrivateKey(value) {
     if (!body) continue;
     const pem = `-----BEGIN ${label}-----\n${(body.match(/.{1,64}/g) ?? []).join('\n')}\n-----END ${label}-----\n`;
     if (keyWorks(pem)) return { pem, repair };
+  }
+
+  // A stretch of the key itself is gone. Work it out from what is left.
+  const rebuilt = rebuiltKey(label, material);
+  if (rebuilt && keyWorks(rebuilt)) {
+    return { pem: rebuilt, repair: 'worked out the piece of the private key that was missing from the rest of the key' };
   }
   return null;
 }
@@ -268,7 +429,7 @@ export function readServiceAccount(value) {
   if (!privateKey) {
     return {
       ok: false,
-      reason: 'the private key inside it is damaged: characters were lost or changed in the copy. It cannot be repaired. Create a new key and save that one.',
+      reason: 'the private key inside it is damaged: characters were lost or changed in the copy, in a part that cannot be worked out again. Create a new key and save that one.',
       facts: describePrivateKey(key.private_key),
     };
   }

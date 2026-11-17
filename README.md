@@ -164,7 +164,81 @@ One-time setup in the Firebase console for `ashgrove-file`:
    only place the region is set. The web app reads the same constant.
 3. **Billing**: the project must be on the **Blaze** plan.
 
-Then:
+Then deploy either from GitHub or from a terminal. Both do the same four
+things in the same order: rules, functions, seed, website.
+
+### Deploy from GitHub
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) deploys straight
+from the repository. Nothing needs to be installed on your own machine. It
+runs only when you start it, never on its own.
+
+**1. Create a key the workflow can deploy with.** Open
+[Google Cloud Shell](https://shell.cloud.google.com) (a terminal in the
+browser, already signed in as you) and run these three commands.
+
+```bash
+gcloud iam service-accounts create github-deploy --project ashgrove-file --display-name "GitHub Actions deploy"
+```
+
+```bash
+for ROLE in firebase.admin cloudfunctions.admin iam.serviceAccountUser artifactregistry.admin serviceusage.serviceUsageAdmin serviceusage.apiKeysViewer datastore.indexAdmin; do gcloud projects add-iam-policy-binding ashgrove-file --member "serviceAccount:github-deploy@ashgrove-file.iam.gserviceaccount.com" --role "roles/$ROLE" --condition None --quiet > /dev/null && echo "granted $ROLE"; done
+```
+
+```bash
+gcloud iam service-accounts keys create key.json --iam-account github-deploy@ashgrove-file.iam.gserviceaccount.com && cat key.json
+```
+
+The last command prints the key. Copy all of it, from the first `{` to the
+last `}`. Once it is saved in GitHub (next step), remove the copy:
+
+```bash
+rm key.json
+```
+
+| Role granted | What the deploy needs it for |
+| --- | --- |
+| Firebase Admin | Hosting, Firestore rules, seeding Firestore, reading the project config |
+| Cloud Functions Admin | Creating and updating the functions, and making the callables reachable |
+| Service Account User | Letting the functions run as the project's runtime account |
+| Artifact Registry Administrator | Setting the clean-up policy for function build images |
+| Service Usage Admin | Turning on the APIs the first functions deploy needs |
+| API Keys Viewer | Reading the web app config during a Hosting deploy |
+| Cloud Datastore Index Admin | Deploying `firestore.indexes.json` |
+
+**2. Add two secrets to the repository.** On GitHub: **Settings → Secrets and
+variables → Actions → New repository secret**.
+
+| Name | Value |
+| --- | --- |
+| `FIREBASE_SERVICE_ACCOUNT` | The key you just copied, whole |
+| `ANSWERS_JSON` | The whole contents of your `answers.json` |
+
+Secrets are encrypted and cannot be read back, and nothing in the workflow
+prints them. The key can deploy to your project, so treat it like a password.
+To revoke it, delete it under **IAM → Service accounts → github-deploy → Keys**.
+
+**3. Run it.** On GitHub: **Actions → Deploy to Firebase → Run workflow**.
+Leave all four boxes ticked the first time.
+
+| Box | What it does |
+| --- | --- |
+| Firestore rules and indexes | `firebase deploy --only firestore:rules,firestore:indexes` |
+| Cloud Functions | `firebase deploy --only functions` |
+| Seed answers and room content | `npm run seed:prod`, from the `ANSWERS_JSON` secret |
+| The website | `firebase deploy --only hosting` |
+
+If a secret is missing or malformed the run stops in its first seconds and
+says which one, before anything is deployed. After the first deploy, a change
+that only touches the site needs only the last box.
+
+To deploy automatically on every push instead, add a `push` trigger to the
+workflow. Give it a branch you only push finished work to.
+
+### Deploy from a terminal
+
+The same thing by hand, from a clone of the repository with `answers.json`
+in place:
 
 ```bash
 npx firebase login
@@ -186,9 +260,9 @@ npm run seed:prod
 npx firebase deploy --only hosting
 ```
 
-`deploy --only hosting` runs `npm run build` and `npm run check:bundle` first
-(a predeploy hook in `firebase.json`), so it always ships a fresh production
-build and refuses to ship one that leaks.
+Either way, `deploy --only hosting` runs `npm run build` and
+`npm run check:bundle` first (a predeploy hook in `firebase.json`), so it
+always ships a fresh production build and refuses to ship one that leaks.
 
 ## How the game is protected
 
@@ -353,6 +427,7 @@ functions/
   src/config/                game.ts (room order, limits), region.ts
 scripts/
   seed.ts                    answers, evidence, rooms, stats
+  ci-credentials.mjs         turns the two GitHub secrets into files for a deploy
   check-bundle.ts            fails if anything secret is in /out
   process-images.mjs         sources to 2400px WebP
   content/                   rooms.ts, types.ts, images.generated.json
@@ -362,6 +437,7 @@ docs/
   image-prompts.md
   screenshots/
 public/images/               fifteen .webp files
+.github/workflows/deploy.yml deploy to Firebase from the Actions tab
 firebase.json  .firebaserc  firestore.rules  firestore.indexes.json
 answers.example.json         the shape of the git-ignored answers.json
 .env.local                   Firebase web config (public identifiers)

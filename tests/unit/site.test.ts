@@ -6,7 +6,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import robots from '../../app/robots';
@@ -140,5 +140,56 @@ describe('what a person is shown when a function says no', () => {
     assert.equal(withoutStatus('Too many guesses. Wait a minute. [429]'), 'Too many guesses. Wait a minute.');
     assert.equal(withoutStatus('Nothing appended.'), 'Nothing appended.');
     assert.equal(withoutStatus('Room [3] of 7.'), 'Room [3] of 7.');
+  });
+});
+
+describe('the photographs of the venue', () => {
+  it('are all on disk, at every width the page offers, and at the size it says', async () => {
+    const { venuePhotos } = await import('../../lib/site/venue.generated');
+    const sharp = (await import('sharp')).default;
+
+    assert.deepEqual(Object.keys(venuePhotos), ['reception', 'desk', 'notices', 'lockers', 'corridor', 'keys', 'key', 'door']);
+    for (const [name, photo] of Object.entries(venuePhotos)) {
+      const widths = photo.sources.map((source) => source.width);
+      assert.deepEqual(widths, [...widths].sort((a, b) => a - b), `${name}: narrowest first`);
+      assert.ok(widths.length >= 2, `${name}: more than one width, so a phone is not sent a desktop's file`);
+      assert.equal(widths[widths.length - 1], photo.width, `${name}: the widest file is the size given`);
+
+      for (const source of photo.sources) {
+        const file = path.join(root, 'public', source.src);
+        assert.ok(existsSync(file), `${source.src} is missing. Run npm run venue.`);
+        const meta = await sharp(file).metadata();
+        assert.equal(meta.width, source.width, `${source.src} is not as wide as it says`);
+        assert.equal(meta.format, 'webp');
+      }
+      const largest = await sharp(path.join(root, 'public', photo.sources[photo.sources.length - 1]?.src ?? '')).metadata();
+      assert.equal(largest.height, photo.height, `${name}: the height given is the widest file's`);
+    }
+  });
+
+  it('are light enough to send', async () => {
+    const { venuePhotos } = await import('../../lib/site/venue.generated');
+    const { statSync } = await import('node:fs');
+    for (const [name, photo] of Object.entries(venuePhotos)) {
+      const sizes = photo.sources.map((source) => statSync(path.join(root, 'public', source.src)).size);
+      assert.ok((sizes[0] ?? 0) < 80_000, `${name}: the narrowest file is ${sizes[0]} bytes`);
+      assert.ok((sizes[sizes.length - 1] ?? 0) < 320_000, `${name}: the widest file is ${sizes[sizes.length - 1]} bytes`);
+    }
+  });
+
+  it('is what the link preview shows', () => {
+    const layout = readFileSync(path.join(root, 'app/(site)/layout.tsx'), 'utf8');
+    assert.ok(layout.includes("'/unsealed-og.jpg'"));
+    assert.ok(existsSync(path.join(root, 'public/unsealed-og.jpg')), 'public/unsealed-og.jpg is missing. Run node scripts/make-og.mjs.');
+  });
+
+  it('are of a place nobody can visit, and the About page says so', () => {
+    const home = readFileSync(path.join(root, 'app/(site)/page.tsx'), 'utf8');
+    const about = readFileSync(path.join(root, 'app/(site)/about/page.tsx'), 'utf8').replace(/\s+/g, ' ');
+
+    assert.ok(home.includes('<Photo'), 'the home page no longer shows the building: this test and that section can go');
+    assert.ok(about.includes("name: 'Where the building is'"), 'the About page has lost the section that says where the building is');
+    assert.ok(about.includes('has no street address'), 'the About page should say there is no address to visit');
+    assert.ok(about.includes('They were not taken in a real building.'), 'the About page should say the pictures are not of a real building');
   });
 });

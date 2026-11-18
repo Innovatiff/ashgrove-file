@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     siteName: SITE.name,
     title: `${SITE.name} · ${SITE.tagline}`,
     description: SITE.description,
-    images: [{ url: '/unsealed-og.png', width: 1200, height: 630, alt: 'A corridor of sealed doors. One stands open.' }],
+    images: [{ url: '/unsealed-og.jpg', width: 1200, height: 630, alt: 'The reception of an escape room venue: a desk with a bell and a locked box, a wall clock, and a rack of keys.' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${SITE.name} · ${SITE.tagline}`,
     description: SITE.description,
-    images: ['/unsealed-og.png'],
+    images: ['/unsealed-og.jpg'],
   },
 };
 

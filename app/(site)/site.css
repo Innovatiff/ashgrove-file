@@ -15,15 +15,14 @@
    its own type; this page is the plain daylight outside them. Bone paper,
    black ink, and one colour of its own: the red of sealing wax.
 
-   The home page is drawn as the inside of a place: a reception with a clock
-   and a key rack, a desk, a board of notices, a row of lockers, and the
-   corridor the rooms open off. The furniture is line drawing, with brass for
-   the fittings.
+   The home page is the inside of a place, shown in photographs: the
+   reception, the desk, the notice board, the lockers and the corridor the
+   rooms open off. The photographs carry the warmth. Everything set around
+   them stays plain so that they can.
 
-   Everything is flat. No shadows, no blur, no gradients. Wallpaper, floor
-   tiles and hatching are SVG tiles. The one exception is the mask that
-   dissolves a room's photograph into that room's own darkness
-   (.plate__image), which is how the room itself shows it.
+   What is not a photograph is flat. No shadows, no blur, no gradients. The
+   one exception is the mask that dissolves a room's photograph into that
+   room's own darkness (.plate__image), which is how the room itself shows it.
    ========================================================================== */
 
 :root {
@@ -37,8 +36,7 @@
   --ink-rule: #3b362d; /* hairlines on the dark band */
   --wax: #a4241b; /* the one accent: seals, links, the mark */
   --wax-deep: #7c170f; /* pressed and hovered wax */
-  --brass: #b8893a; /* fittings in the drawings: bells, keys, plates, hooks */
-  --wallpaper: #e3dccf; /* the pattern on the walls, a shade off the page */
+  --brass: #b8893a; /* the plate under the clock */
 
   /* A room's own colours, used only inside that room's plate and door. */
   --night: #050505;
@@ -413,70 +411,6 @@
   border-bottom-color: var(--ink);
 }
 
-/* ------------------------------------------------------------------ hero -- */
-
-.hero {
-  padding-top: clamp(40px, 7vw, 104px);
-}
-
-/* The corridor: a row of doors on one floor line. On a narrow screen it is
-   cropped at the right, so the corridor carries on past the edge. */
-.corridor {
-  display: block;
-  width: 100%;
-  height: clamp(210px, 33vw, 420px);
-  margin-top: clamp(32px, 5vw, 64px);
-}
-.corridor svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.corridor__line {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-}
-.corridor__thin {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-.corridor__leaf {
-  fill: var(--card);
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-}
-.corridor__plate {
-  fill: var(--bone);
-  stroke: var(--ink);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-.corridor__number {
-  fill: var(--ink);
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-}
-.corridor__open:focus-visible {
-  outline: 2px solid var(--wax);
-  outline-offset: 4px;
-}
-.corridor__light {
-  transform-origin: 190px 360px;
-  transition: transform 0.2s var(--ease);
-}
-@media (hover: hover) {
-  .corridor__open:hover .corridor__light {
-    transform: scaleY(1.18);
-  }
-}
-
 /* ----------------------------------------------------------------- rooms -- */
 
 /* An open room. Half of the plate is the room's own world, in the room's own
@@ -580,32 +514,6 @@
   margin-top: 2px;
   font-size: 0.9375rem;
   line-height: 1.4;
-}
-
-/* A room that is not open yet: a plain label, and a seal on hatching. */
-.sealed {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(96px, 30%, 132px);
-  min-height: 168px;
-  border: 1px solid var(--rule-2);
-  background: var(--bone);
-}
-.sealed__label {
-  display: flex;
-  flex-direction: column;
-  padding: clamp(18px, 2.2vw, 28px);
-}
-.sealed__hatch {
-  display: grid;
-  place-items: center;
-  border-left: 1px solid var(--rule-2);
-  /* Diagonal hairlines, drawn as an SVG tile. Not a gradient. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3E%3Cpath d='M-1 15 15-1M-1 1 1-1M13 15l2-2' fill='none' stroke='%23D8D1C3'/%3E%3C/svg%3E");
-  background-size: 14px 14px;
-}
-.sealed__seal {
-  width: clamp(60px, 62%, 88px);
-  height: auto;
 }
 
 /* ----------------------------------------------------------------- steps -- */
@@ -830,134 +738,144 @@ select.input {
 }
 
 /* ============================================================ THE PLACE ==
-   Walls, floors and furniture for the home page.
+   The home page is the inside of a building, shown in photographs.
    ========================================================================== */
 
-/* A wall: the page colour under a small repeating motif, a shade off it. */
-.wall {
-  background-color: var(--bone);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Cpath d='M18 12.500l2.500 5.500-2.500 5.500-2.500-5.500z' fill='none' stroke='%23E3DCCF'/%3E%3C/svg%3E");
-  background-size: 36px 36px;
-}
+/* ---------------------------------------------------------- photographs -- */
 
-/* ------------------------------------------------------------ drawings -- */
-
-.dr {
+/* A photograph in the run of the page, framed in ink. */
+.photo {
   display: block;
   width: 100%;
   height: auto;
-  overflow: visible;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
 }
-.dr-line {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
+.band--ink .photo {
+  border-color: var(--ink-rule);
 }
-.dr-thin {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 1;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
+.photo__note {
+  margin-top: 10px;
+  font-size: 0.875rem;
+  color: var(--ink-3);
 }
-.dr-faint {
-  fill: none;
-  stroke: var(--rule-2);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-}
-.dr-card,
-.dr-bone,
-.dr-brass,
-.dr-wax,
-.dr-night {
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-.dr-card {
-  fill: var(--card);
-}
-.dr-bone {
-  fill: var(--bone);
-}
-.dr-brass {
-  fill: var(--brass);
-}
-.dr-wax {
-  fill: var(--wax);
-}
-.dr-night {
-  fill: var(--ink);
-}
-.dr-solid {
-  fill: var(--ink);
-}
-.dr-tile {
-  fill: var(--wallpaper);
-}
-.dr-rope {
-  fill: none;
-  stroke: var(--wax);
-  stroke-width: 4;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-.dr-text {
-  fill: var(--ink);
-  font-family: var(--font-sans);
-  font-weight: 700;
-  letter-spacing: 0.14em;
+.band--ink .photo__note {
+  color: var(--rule-2);
 }
 
-/* ------------------------------------------------------------ reception -- */
-
-.reception {
-  padding-top: clamp(36px, 6vw, 88px);
+/* A photograph from one edge of the window to the other. It fills its box
+   and is cropped to it, so the box decides how much of it shows. */
+.photo-wide {
+  display: block;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  border-block: 1.5px solid var(--ink);
+  background: var(--ink);
+}
+.photo-wide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-/* The things on the wall behind the desk. */
-.reception__wall {
+/* --------------------------------------------------------- the entrance -- */
+
+/* The reception, as it looks from the front door. The headline sits on a
+   card laid over the foot of the photograph, and the board beside it. */
+.entrance__photo {
+  height: clamp(250px, 44vw, 680px);
+  border-top: 0;
+}
+.entrance__photo img {
+  object-position: 50% 40%;
+}
+.entrance__below {
+  position: relative;
   display: grid;
-  gap: 18px 24px;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  grid-template-areas:
-    'clock board'
-    'plate plate'
-    'keys keys';
+  gap: 20px 40px;
   align-items: start;
+  margin-top: calc(-1 * clamp(28px, 6vw, 104px));
 }
-/* With room to spare, the plate goes where it belongs: under the clock. */
-@media (min-width: 30rem) {
-  .reception__wall {
-    grid-template-areas:
-      'clock board'
-      'plate board'
-      'keys keys';
+/* Side by side, the card is as tall as the board and the key beside it, and
+   its buttons sit at its foot. */
+@media (min-width: 64rem) {
+  .entrance__below {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: stretch;
   }
 }
-.reception__clock {
-  grid-area: clock;
+.entrance__card {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(22px, 3.2vw, 44px);
+  border: 1.5px solid var(--ink);
+  background: var(--bone);
 }
-.reception__board {
-  grid-area: board;
+.entrance__actions {
+  margin-top: auto;
+  padding-top: 28px;
 }
-.reception__plate {
-  grid-area: plate;
-}
-.reception__keys {
-  grid-area: keys;
+.entrance__title {
+  font-size: clamp(2.6rem, 6.4vw, 5.75rem);
+  line-height: 0.96;
 }
 
-/* The lobby clock. Its hands are moved by the page, once a minute. */
-.clock__hand {
-  stroke: var(--ink);
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
+/* Beside the card: the board, and under it the key. */
+.entrance__side {
+  display: grid;
+  gap: 20px;
+}
+
+/* The key on its hook, close. The whole picture is the way into the room. */
+.keyshot {
+  display: block;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+}
+.keyshot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.keyshot__note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-top: 1.5px solid var(--ink);
+  background: var(--card);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition:
+    background-color 0.16s var(--ease),
+    color 0.16s var(--ease);
+}
+.keyshot__note .btn__arrow {
+  transition: transform 0.16s var(--ease);
+}
+@media (hover: hover) {
+  .keyshot:hover .keyshot__note {
+    background: var(--wax);
+    color: var(--bone);
+  }
+  .keyshot:hover .btn__arrow {
+    transform: translateX(3px);
+  }
+}
+
+/* The corridor, one wall of it, from edge to edge. On a narrow screen it is
+   cropped from the right, so the open door stays in the picture. */
+.corridor-photo {
+  aspect-ratio: 2400 / 1030;
+  min-height: 250px;
+  max-height: 720px;
+  margin-top: clamp(32px, 5vw, 64px);
+}
+.corridor-photo img {
+  object-position: 0% 50%;
 }
 
 /* A brass plate, screwed to the wall. */
@@ -1029,35 +947,6 @@ select.input {
 .board__tally .board__row:first-of-type {
   margin-top: 0;
   border-top: 0;
-}
-
-/* The key that can be taken. It tips on its hook when it is pointed at. */
-.key-link:focus-visible {
-  outline: 2px solid var(--wax);
-  outline-offset: 4px;
-}
-.key-link__key {
-  transform-origin: 78px 70px;
-  transition: transform 0.2s var(--ease);
-}
-@media (hover: hover) {
-  .key-link:hover .key-link__key {
-    transform: rotate(-7deg);
-  }
-}
-
-/* The desk, across the whole width. On a narrow screen it is cropped at the
-   sides and the desk itself stays in the middle. */
-.desk {
-  display: block;
-  width: 100%;
-  height: clamp(170px, 24vw, 300px);
-  margin-top: clamp(28px, 4vw, 56px);
-}
-.desk svg {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 
 /* Three short facts, set like the tags on a key. */
@@ -1173,127 +1062,6 @@ select.input {
   letter-spacing: 0.12em;
   text-align: center;
   font-variant-numeric: tabular-nums;
-}
-
-/* ------------------------------------------------------------ the notices -- */
-
-/* The board the notices are pinned to. */
-.noticeboard {
-  position: relative;
-  padding: clamp(28px, 3.4vw, 44px) clamp(16px, 3vw, 40px) clamp(24px, 3vw, 40px);
-  border: 1.5px solid var(--ink);
-  background: var(--wallpaper);
-}
-.noticeboard__name {
-  position: absolute;
-  top: -13px;
-  left: 50%;
-  padding: 4px 16px;
-  border: 1.5px solid var(--ink);
-  background: var(--brass);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  transform: translateX(-50%);
-}
-
-.notes {
-  display: grid;
-  gap: 28px 24px;
-}
-@media (min-width: 40rem) {
-  .notes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-.note {
-  position: relative;
-  padding: 34px 24px 26px;
-  border: 1.5px solid var(--ink);
-  background: var(--card);
-}
-/* The pin. */
-.note::before {
-  content: '';
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
-  border: 1.5px solid var(--ink);
-  border-radius: 999px;
-  background: var(--wax);
-}
-@media (min-width: 40rem) {
-  .note:nth-child(4n + 1) {
-    transform: rotate(-0.8deg);
-  }
-  .note:nth-child(4n + 2) {
-    transform: rotate(0.6deg);
-  }
-  .note:nth-child(4n + 3) {
-    transform: rotate(0.5deg);
-  }
-  .note:nth-child(4n + 4) {
-    transform: rotate(-0.6deg);
-  }
-}
-
-/* ------------------------------------------------------------ the lockers -- */
-
-.lockers {
-  display: grid;
-  gap: 16px;
-}
-@media (min-width: 40rem) {
-  .lockers {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 72rem) {
-  .lockers {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-.locker {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  padding: 20px 22px 24px;
-  border: 1.5px solid var(--bone);
-  background: var(--card);
-  color: var(--ink);
-}
-/* The vents at the top of the door. */
-.locker__vents {
-  display: grid;
-  gap: 5px;
-  width: 56px;
-}
-.locker__vents span {
-  height: 3px;
-  background: var(--ink);
-}
-.locker__number {
-  position: absolute;
-  top: 18px;
-  right: 20px;
-  padding: 3px 9px;
-  border: 1px solid var(--ink);
-  background: var(--brass);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-}
-.locker__lock {
-  width: 30px;
-  height: auto;
-  margin-top: 26px;
-}
-.locker .label {
-  color: var(--ink-3);
 }
 
 /* ----------------------------------------------------------- small signs -- */

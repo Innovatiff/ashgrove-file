@@ -360,3 +360,149 @@ Why this one: Rim light from the right, matching the other four. B is lit from t
 The pipeline trims each cutout to its subject, dissolves any edge the subject
 runs off, resizes to 2400 px on the long edge and rewrites
 `scripts/content/images.generated.json` and `lib/public-images.generated.ts`.
+
+---
+
+# The venue: the main website's photographs
+
+The seven photographs in `/public/venue` are of the place the main website
+pretends to be: the reception of an escape room venue, and what is down its
+corridor. There is no such building. Like the room's pictures, they were
+generated with the Higgsfield MCP.
+
+## Model and settings
+
+| | |
+| --- | --- |
+| Model | **GPT Image 2.6** (Higgsfield id `gpt_image_2_6`), the model chosen above |
+| Resolution | `4k` (3840 px on the long edge for 21:9 and 16:9; 3504 px for 3:2; 3200 px for 4:5) |
+| Quality | `high` |
+| Variations | 2 per photograph, 1 kept |
+| Reference | The kept reception photograph, passed as `image_references` to the other six |
+| Final files | `scripts/process-venue.mjs`: WebP, quality 80, at two or three widths each |
+
+The reception was made first, on its own. The other six were then made with
+the kept reception as a reference image, and told they were the same venue on
+the same evening. That is what makes the desk in the close-up the desk in the
+wide shot, and the lamp, the bell and the box the same lamp, bell and box.
+
+## Style suffix
+
+Appended to every prompt. The reception's ends with the lens it was taken on
+("Full-frame camera on a tripod, 24mm lens, f/8, natural perspective, straight
+verticals") in place of the reference to itself.
+
+> Editorial interior photography of a real place, the same venue and the same evening as the reference photograph: cream plaster walls above dark oak panelling, black-and-cream checkerboard tiled floor, aged brass fittings, deep oxblood red accents. Warm light from the lamps, soft natural shadows, true-to-life colour, fine detail, slight wear on every surface. No people. No watermark, no logo, no text other than what is described.
+
+## Selection rules
+
+A variation was kept only if all four held:
+
+1. **Every word and number in it is right.** These pictures have lettering in
+   them on purpose, and each was read at full size: `UNSEALED`, `RECEPTION`,
+   `ROOMS` with its arrow, `NOTICES`, the cards `1` to `4`, the lockers `01` to
+   `04`, the doors and hooks `001` to `005`, the tag stamped `OPEN`.
+2. **Nothing else in it can be read.** The ledger's handwriting, the notice
+   cards and the plate under the clock are too small or too faded to make
+   out. What the plate and the ledger say is written on the page as text,
+   where it can be changed without retaking a photograph.
+3. **No people.**
+4. **It is the same building as the reception.**
+
+All fourteen renders passed, so each choice below was between two good
+pictures.
+
+## What is in the pictures, and what follows from it
+
+- **The site's name** is on the wall of the reception in brass letters, and so
+  on the link preview picture. If `SITE.name` changes, retake `reception` and
+  redraw the preview (`node scripts/make-og.mjs`).
+- **The room numbers 001 to 005** are on the doors in `corridor` and on the
+  plates in `keys`. If the catalogue grows past five or a number changes,
+  retake those two.
+- **The clock** in `reception` stands at ten past ten. It is a photograph and
+  does not move. The lobby clock that does is the one on the board, on the
+  page.
+
+## The set
+
+### reception (21:9)
+
+Kept: `eb96460d-29d8-4812-976a-3dfa962a7ea6`. Not kept: `9fadb8e1-ca50-447e-a8ee-21c87f1d26e2`.
+
+> Wide interior photograph, taken from just inside the front door, looking across the reception of a small escape room venue in an old townhouse. In the centre stands a long dark oak reception desk with a brass plaque on its front that reads RECEPTION. On the desk: a brass call bell, an open guest ledger with a fountain pen, a brass banker's lamp with a deep red glass shade, switched on, and a small brass-bound wooden lockbox with a paper tag tied to it. On the cream wall behind the desk, brass letters spell UNSEALED. To the left of the letters hangs a large round brass-rimmed wall clock showing ten past ten, with a small brass plate fixed under it, its engraving too small to read. To the right of the letters is a dark wooden key rack with a single row of five brass hooks: an old brass key with a paper tag hangs from the first hook, and each of the other four hooks holds a small cream envelope closed with a round red wax seal. At the far left are coat hooks with a dark hat and a coat, an umbrella stand and a fern in a pot. At the right a red velvet rope hangs between two brass posts across the opening of a corridor, and a small wooden sign hanging above it reads ROOMS with an arrow pointing right; beyond the rope the corridor runs back past closed doors and lit brass wall lamps. The floor is black-and-cream checkerboard tile.
+
+Why this one: the edge of the open front door is in the left of the frame,
+with its brass knob, so the picture is taken from where a visitor stands. The
+other is the same room seen square on, from nowhere in particular.
+
+### desk (16:9)
+
+Kept: `e90145d8-20fb-4b2b-90be-a6184dad05fc`. Not kept: `bcde6264-57e1-4e71-a196-60bd6216b61b`.
+
+> Close photograph of the top of the same dark oak reception desk as in the reference image, seen from the visitor's side at a slight angle, 50mm lens, shallow depth of field. In sharp focus in the middle: the small brass-bound wooden lockbox, its hasp secured with a small brass four-digit combination padlock, a cream paper luggage tag tied to its handle with string, the writing on the tag turned away. Beside it lies the open guest ledger with ruled pages filled with faded handwriting too small to read, a black fountain pen across it, and the brass call bell. The brass banker's lamp with the deep red glass shade lights the desk from the right. Softly out of focus behind: the cream wall, the lower edge of the brass-rimmed wall clock and the small brass plate under it.
+
+Why this one: the plate under the clock is in the frame, straight above the
+box. The practice box on the page turns on that plate, and its caption points
+at it.
+
+### notices (4:5)
+
+Kept: `c10f5fbf-2737-4061-87b3-9c417ede9566`. Not kept: `74d2ab0d-6bd9-4ff2-9671-ea860e34710e`.
+
+> Photograph in the same venue as the reference image: a cork notice board in a dark oak frame hanging on the cream plaster wall above the dark oak panelling. A small brass plate fixed to the top of the frame is engraved with the single word NOTICES. Four cream index cards are pinned to the cork with red drawing pins, in two rows of two, each hanging slightly crooked. Each card carries one large handwritten numeral in red ink, 1, 2, 3 and 4 in order, and under the numeral a few lines of small faded handwriting too small to read. A lit brass wall lamp with a frosted glass shade beside the board casts warm light across it. 35mm lens, straight on.
+
+Why this one: a doorway beside the board shows the corridor running back, so
+the board is somewhere in the building and not on a bare wall.
+
+### lockers (4:5)
+
+Kept: `88abe41c-f3e7-47f3-be4e-85573834fe46`. Not kept: `3715a279-66e1-41e3-89aa-bbb8a50705b4`.
+
+> Photograph in the same venue as the reference image: an alcove off the corridor with a row of four tall old steel lockers painted cream, standing on the black-and-cream checkerboard tiled floor against dark oak panelling. Each locker door has ventilation slits near the top, a small brass number plate and a brass padlock through its latch. The number plates read 01, 02, 03 and 04 from left to right. A worn oak bench stands in front of the lockers. A lit brass wall lamp with a frosted glass shade above them casts warm light. 35mm lens, straight on, the whole row of four lockers in frame.
+
+Why this one: the red curtain tied back beside the lockers. It is the only
+red in the picture, and the page it sits on is otherwise black.
+
+### corridor (21:9)
+
+Kept: `f84a28b5-1f6c-46e6-b86a-493bdc16e315`. Not kept: `008d122b-b364-4de8-ae82-a3a2dd35549f`.
+
+> Straight-on photograph of one long wall of the corridor in the same venue as the reference image, framed like an architectural elevation. Five completely different doors stand side by side along the wall, each with a small brass number plate above it. The plates read 001, 002, 003, 004 and 005 from left to right. Door 001 is a plain panelled door painted cream, standing ajar, with strong warm orange lamplight spilling out through the gap and across the floor. Door 002 is an arched door of dark oak planks with black iron strap hinges. Door 003 is a round steel vault door with a spoked brass wheel. Door 004 is a tall pair of dark panelled double doors under a small classical pediment. Door 005 is a tiny arched door only knee high. Doors 002, 003, 004 and 005 are shut, and each has a large round red wax seal pressed over its lock. Lit brass wall lamps with frosted glass shades hang on the wall between the doors. Dark oak panelling below, cream plaster above, black-and-cream checkerboard tiled floor across the foreground. 28mm lens, straight verticals.
+
+Why this one: door 001 stands wider open and its light reaches further across
+the floor. On a phone the picture is cropped from the right, and that door
+and its light are what is left.
+
+### keys (3:2)
+
+Kept: `02e4aa31-81f3-4f7a-854b-d139299606d1`. Not kept: `10238845-1a63-438a-8c8f-e974d62788af`.
+
+> Close photograph of the key rack from the reference image: a dark wooden board on the cream plaster wall with five brass hooks in a single row, and a small brass number plate fixed above each hook. The plates read 001, 002, 003, 004 and 005 from left to right. From hook 001 hangs the old brass key on a ring with a cream paper luggage tag on string; the tag is stamped with the single word OPEN in red ink. From each of the other four hooks hangs a small cream envelope closed with a round red wax seal. 50mm lens, straight on, warm side light from a lamp.
+
+Why this one: both are right and there is nothing to choose between them. The
+first was kept.
+
+`key`, the close picture of the first hook beside the headline, is not a
+photograph of its own. It is cut from this one by `scripts/process-venue.mjs`.
+
+### door (4:5)
+
+Kept: `3c7c9afa-c3ad-4375-ba26-39ca71a4d407`. Not kept: `3bf31180-b509-4e3d-b6d8-41946ff15d57`.
+
+> Photograph in the corridor of the same venue as the reference image. A panelled door painted cream stands a hand's width ajar; strong warm orange lamplight spills through the gap across the black-and-cream checkerboard tiled floor and up the dark oak panelling. A small brass number plate above the door reads 001. An old brass key with a cream paper luggage tag hangs in the lock. A lit brass wall lamp with a frosted glass shade beside the door; the rest of the corridor falls away into warm shadow. 35mm lens, seen from a few steps back, slightly to one side.
+
+Why this one: the door frame is dark oak, as it is on door 001 in the
+photograph of the corridor. In the other the frame is painted cream.
+
+## Retaking a photograph
+
+1. Generate with the model and settings above, the prompt and the style
+   suffix, and the kept reception as the reference image. To retake the
+   reception itself, generate it with no reference, then retake the others
+   from the new one.
+2. Read every word and number in the result at full size.
+3. Save the PNG as `.image-src/venue/{name}.png` (the folder is git-ignored).
+4. Run `npm run venue -- --only {name}`. For `keys`, also `--only key`.
+5. If it was the reception: `npm run build`, then `node scripts/make-og.mjs`.
+

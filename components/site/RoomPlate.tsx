@@ -1,8 +1,7 @@
 import Image from 'next/image';
 import { Arrow } from '@/components/site/Arrow';
 import { LiveCount } from '@/components/site/LiveCount';
-import { WaxSeal } from '@/components/site/Seal';
-import type { OpenRoom, SealedRoom } from '@/lib/site/catalogue';
+import type { OpenRoom } from '@/lib/site/catalogue';
 
 /**
  * An open room in the catalogue. The left half is the room itself: its own
@@ -71,24 +70,6 @@ export function RoomPlate({ room }: { room: OpenRoom }) {
             <Arrow />
           </a>
         </div>
-      </div>
-    </article>
-  );
-}
-
-/** A room that is not open yet: a number and one line, with a seal beside them. */
-export function SealedPlate({ room }: { room: SealedRoom }) {
-  return (
-    <article className="sealed" aria-label={`Number ${room.number}, sealed`}>
-      <div className="sealed__label">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-          <p className="label">Nº {room.number}</p>
-          <p className="status status--sealed">Sealed</p>
-        </div>
-        <p className="display display--4 mt-auto pt-10">{room.note}</p>
-      </div>
-      <div className="sealed__hatch">
-        <WaxSeal className="sealed__seal" />
       </div>
     </article>
   );

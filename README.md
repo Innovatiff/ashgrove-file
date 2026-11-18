@@ -56,27 +56,52 @@ Everything about it is in three places: [`app/(site)`](<app/(site)>) (the
 pages and the stylesheet), [`components/site`](components/site) and
 [`lib/site`](lib/site).
 
-**The home page is a place.** It is drawn as the inside of the building the
-rooms are in, and read in the order a visitor would walk it:
+**The home page is a place.** It is the inside of the building the rooms are
+in, shown in photographs, and read in the order a visitor would walk it:
 
-1. **Reception.** The headline, a wall clock, a board of what is open today
-   with the live count of who has gone in and solved it, and a key rack with
-   one hook for each room in the catalogue. The key for an open room hangs on
-   its hook and is a link to that room. Under it all, the desk.
-2. **On the desk**, a practice box that a visitor can really open (below).
-3. **The briefing**: how it works, as four notices pinned to a board.
-4. **The lockers**: the four house rules, as the four things a visitor can
-   leave behind because no room will ask for them.
-5. **The corridor**: the doors, the plate for each open room, the sealed ones.
+1. **Reception.** A photograph from the front door, edge to edge. Laid over
+   the foot of it: the headline, and a board of what is open today with the
+   live count of who has gone in and solved it, and the lobby clock. Under the
+   board, a close picture of key 001 on its hook, which is a link to the room.
+2. **On the desk**, a photograph of the box on the reception desk, and under
+   it a practice box that a visitor can really open (below).
+3. **The briefing**: the notice board, and how it works in four steps.
+4. **The lockers**: the lockers, and the four house rules as the four things
+   a visitor can leave in them because no room will ask for them.
+5. **The corridor**: one wall of it, edge to edge, with its five doors; the
+   plate for each open room; the key rack, with the sealed rooms under wax.
+6. **The door**: Room 001, standing open.
 
-The furniture is inline SVG and CSS: line drawing in ink, brass for the
-fittings, wax red for seals. Nothing is a photograph and nothing is animated.
-The clock's hands are redrawn once a minute.
+**The photographs** are of a place that does not exist. There are seven. They
+were generated, the reception first and the other six with it as a reference,
+so that they are plainly the same building. How is written down in
+[`docs/image-prompts.md`](docs/image-prompts.md): the model, the prompts,
+which of each pair was kept and why. The eighth picture on the page, the key
+on its hook, is a part of the photograph of the key rack. The site's name is
+in the first of them, in brass letters on the wall, and the room numbers are
+in two more. Changing either means taking those pictures again.
+
+A visitor is told the same. The About page has a section, "Where the building
+is", that says there is no address to visit and that the pictures were made
+for the site. A test keeps it there for as long as the home page shows a
+building.
+
+Full-size sources are not in the repository. To reprocess one, put its PNG at
+`.image-src/venue/{name}.png` and run:
+
+```bash
+npm run venue -- --only {name}
+```
+
+That writes each picture to `public/venue` at two or three widths, and
+[`<Photo>`](components/site/Photo.tsx) lets the browser choose between them,
+so a phone is not sent a desktop's file. The reception is asked for at once;
+the rest load as the visitor reaches them.
 
 **The practice box.** Three things in the lobby add up to a time: the brass
 plate under the clock (it runs ten minutes fast), the last line of the desk
-ledger, and the card tied to the box. The lobby clock really does run ten
-minutes ahead of the visitor's own. A wrong answer that is worth a word gets
+ledger, and the card tied to the box. The lobby clock on the board really does
+run ten minutes ahead of the visitor's own. A wrong answer that is worth a word gets
 one. It is a toy, checked in the browser ([`lib/site/practice.ts`](lib/site/practice.ts)),
 and nothing like the rooms, which are checked on the server. Its answer is
 still kept as a SHA-256 fingerprint and not as text, and a unit test fails if
@@ -103,9 +128,10 @@ Only what a room's own front page already says in public belongs in the
 catalogue. Nothing from inside a room.
 
 **The look.** Tokens are CSS variables in
-[`app/(site)/site.css`](<app/(site)/site.css>). Like the room, it is flat: no
-shadows, no blur, no gradients, and the hatching on a sealed plate is an SVG
-tile. The one mask is on a room's photograph, the way the room shows it.
+[`app/(site)/site.css`](<app/(site)/site.css>). The photographs carry the
+warmth, and everything set around them is plain so that they can: no shadows,
+no blur, no gradients. The one mask is on a room's own photograph, the way
+the room shows it.
 
 | Token | Value | Use |
 | --- | --- | --- |
@@ -116,8 +142,7 @@ tile. The one mask is on a room's photograph, the way the room shows it.
 | `--ink-3` | `#6B6458` | Labels and notes |
 | `--rule`, `--rule-2` | `#D8D1C3`, `#B9B0A0` | Hairlines, field borders |
 | `--wax`, `--wax-deep` | `#A4241B`, `#7C170F` | The one accent: seals, the mark, emphasis, focus |
-| `--brass` | `#B8893A` | Fittings in the drawings: the clock, bells, keys, plates |
-| `--wallpaper` | `#E3DCCF` | The pattern on the walls and the floor tiles, a shade off the page |
+| `--brass` | `#B8893A` | The plate under the clock, where it is written out |
 
 Titles are Fraunces, everything else Instrument Sans. Both are downloaded at
 build time and served from the site, so a visitor's browser never asks Google
@@ -140,8 +165,9 @@ Each has `name`, `email`, `topic` (`broken`, `question`, `data` or `other`),
 has a file in a room, the `badge` and name on it. Nothing emails you when one
 arrives. No browser can read or write that collection, whoever is signed in.
 
-**The link preview picture** is `public/unsealed-og.png`. It is drawn from
-the built site, so it always matches it:
+**The link preview picture** is `public/unsealed-og.jpg`: the reception, with
+the headline on a card. It is drawn from the built site, so it always matches
+it:
 
 ```bash
 npm run build
@@ -150,7 +176,7 @@ node scripts/make-og.mjs
 
 It needs Playwright with a Chromium, which is not a dependency of this
 project. Run it after changing the name, the headline, the colours or the
-corridor drawing, and commit the picture.
+photograph of the reception, and commit the picture.
 
 **The analytics question.** Google Analytics is the only thing on the site
 that is not needed to play, and the only thing that sets cookies. It is off
@@ -357,7 +383,7 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | 98 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Nothing from `answers.json` is in a tracked file. |
+| `npm run test:unit` | 102 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Every photograph of the venue is on disk at each width the page offers, and none is heavy. Nothing from `answers.json` is in a tracked file. |
 | `npm run test:rules` | 43 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. Nobody can read or write the contact inbox. |
 | `npm run test:functions` | 44 tests driving `checkAnswer`, `signOath`, `takeHint`, `accuse` and `sendMessage` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, a case that is counted once, and a contact form that tidies what it is sent, refuses what is wrong and stops at three messages a day. |
 | `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`. |
@@ -666,7 +692,11 @@ two disagree.
 
 ## Images
 
-All fifteen were generated with Higgsfield. Every final prompt, the model, the
+The room's fifteen pictures are in `public/images`, and the main website's
+photographs of the venue are in `public/venue` (see "The main website",
+above).
+
+All of the room's fifteen were generated with Higgsfield. Every final prompt, the model, the
 job ids and the reason each variation was kept are in
 [`docs/image-prompts.md`](docs/image-prompts.md).
 
@@ -700,10 +730,9 @@ app/
   robots.ts  sitemap.ts
 components/
   site/                      the main website: Masthead, Colophon, PageHead,
-                             Clauses, ContactForm, AnalyticsChoice, Arrow, and
-                             the home page's furniture: LobbyClock, TodayBoard,
-                             KeyRack, ReceptionDesk, PracticeBox, Padlock,
-                             Corridor, RoomPlate, LiveCount, Seal
+                             Clauses, ContactForm, AnalyticsChoice, Arrow,
+                             Seal, and the home page's own: Photo, TodayBoard,
+                             PracticeBox, RoomPlate, LiveCount
   index.ts                   everything the room exposes for later rooms
   ui/                        Frame, DoubleRule, Section, FileLabel, BlendImage,
                              PinnedPhoto, Reveal, EvidenceCard, Redaction,
@@ -724,7 +753,8 @@ lib/
   site/                      the main website: brand (the name, the menu),
                              catalogue (the rooms), stats (the public count),
                              practice (the box on the desk), contact (the
-                             form's checks and its one call), fonts, fonts-404
+                             form's checks and its one call), fonts, fonts-404,
+                             venue.generated (the photographs and their sizes)
   consent.ts  use-consent.ts the answer about analytics, for the whole site
   firebase.ts                one initialisation; analytics only once allowed
   api.ts                     the room's four callables, as the browser calls them
@@ -745,7 +775,8 @@ scripts/
   lib/                       secret-json (repairs a pasted key), sealed-answers,
                              google-preflight, ci-report
   check-bundle.ts            fails if anything secret is in /out
-  process-images.mjs         sources to 2400px WebP
+  process-images.mjs         the room's sources to 2400px WebP
+  process-venue.mjs          the venue's photographs to WebP, at several widths
   make-og.mjs                draws the main website's link preview picture
   content/                   rooms.ts (the seven rooms and the wall), answers.ts
                              (reads answers.json), types.ts, images.generated.json
@@ -755,7 +786,8 @@ docs/
   image-prompts.md
   screenshots/
 public/images/               the room's fifteen .webp files
-public/unsealed*.{svg,png}   the main website's icon and link preview picture
+public/venue/                the main website's photographs of the venue
+public/unsealed*             the main website's icon and link preview picture
 .github/workflows/
   deploy.yml                 deploy to Firebase from the Actions tab
   check.yml                  check the secrets and the project, deploy nothing

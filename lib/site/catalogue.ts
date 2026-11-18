@@ -37,7 +37,6 @@ export interface OpenRoom {
 export interface SealedRoom {
   status: 'sealed';
   number: string;
-  note: string;
 }
 
 export type CatalogueRoom = OpenRoom | SealedRoom;
@@ -64,13 +63,15 @@ export const ASHGROVE: OpenRoom = {
   enter: 'Open the file',
 };
 
-// Five doors, as in the drawing of the corridor, the key rack and the board.
+// Five doors, as in the photographs of the corridor and of the key rack, and
+// on the board. If this list changes, those two photographs need retaking
+// (docs/image-prompts.md), because the numbers are in the pictures.
 export const CATALOGUE: readonly CatalogueRoom[] = [
   ASHGROVE,
-  { status: 'sealed', number: '002', note: 'The next room.' },
-  { status: 'sealed', number: '003', note: 'The one after it.' },
-  { status: 'sealed', number: '004', note: 'Not yet.' },
-  { status: 'sealed', number: '005', note: 'Nor this one.' },
+  { status: 'sealed', number: '002' },
+  { status: 'sealed', number: '003' },
+  { status: 'sealed', number: '004' },
+  { status: 'sealed', number: '005' },
 ];
 
 export const OPEN_ROOMS = CATALOGUE.filter((room): room is OpenRoom => room.status === 'open');

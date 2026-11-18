@@ -25,6 +25,23 @@ const SECTIONS: readonly Clause[] = [
     ),
   },
   {
+    // The front page is photographs of a building. This is where the site
+    // says, in plain words, that nobody can visit it.
+    name: 'Where the building is',
+    body: (
+      <>
+        <p>
+          Nowhere you can walk to. {SITE.name} has no street address and no front desk. Every room is a web page, and
+          the way in is the one you are using now.
+        </p>
+        <p>
+          The reception, the corridor and the lockers on the front page are the place as we picture it. Those pictures
+          were made for this site. They were not taken in a real building.
+        </p>
+      </>
+    ),
+  },
+  {
     name: 'How they are made',
     body: (
       <>

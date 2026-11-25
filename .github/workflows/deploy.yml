@@ -12,7 +12,8 @@ name: Deploy to Firebase
 #
 # The answers come from answers.sealed.json in the repository, which only that
 # key can open. A secret named ANSWERS_JSON is read as a fallback when there
-# is no sealed file the key can open.
+# is no sealed file the key can open. It never stands in for a sealed file
+# that opened and was not recognised: that stops the run.
 #
 # To test the setup without deploying anything, run "Check deploy setup"
 # (check.yml) instead.

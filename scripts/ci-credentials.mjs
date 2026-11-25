@@ -28,6 +28,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createReport } from './lib/ci-report.mjs';
+import { countOf, looksLikeAnswers } from './lib/answers-shape.mjs';
 import { open as openSealed } from './lib/sealed-answers.mjs';
 import { describeSecret, guessMistake, readJsonSecret, readServiceAccount } from './lib/secret-json.mjs';
 
@@ -114,16 +115,6 @@ function serviceAccount() {
 
 const SEALED = 'answers.sealed.json';
 
-/** True for the parsed contents of an answers file: every entry has its answer. */
-function looksLikeAnswers(value) {
-  const isAnswer = (answer) =>
-    typeof answer === 'string' || (Array.isArray(answer) && answer.length > 0 && answer.every((one) => typeof one === 'string'));
-  const entries = Object.entries(value).filter(([name]) => !name.startsWith('_'));
-  return entries.length > 0 && entries.every(([, entry]) => typeof entry === 'object' && entry !== null && isAnswer(entry.answer));
-}
-
-const countOf = (value) => Object.keys(value).filter((name) => !name.startsWith('_')).length;
-
 /** Writes ./answers.json, unless a developer's own copy is already here. */
 function putAnswers(text) {
   // A checkout on GitHub never has this file. A developer's machine might.
@@ -136,19 +127,37 @@ function putAnswers(text) {
 }
 
 /**
- * The answers sealed into the repository for this very commit. Returns true
- * when they were opened and put in place.
+ * The answers sealed into the repository for this very commit. Says what
+ * came of it:
+ *
+ *   placed        opened, recognised and put in place
+ *   absent        there is no sealed file
+ *   unopened      this key cannot open it. The secret may stand in for it.
+ *   unrecognised  it opened, and it is not an answers file. Nothing stands in.
  */
 function sealedAnswers(key, haveSecret) {
   const sealedPath = path.join(root, SEALED);
-  if (!existsSync(sealedPath)) return false;
+  if (!existsSync(sealedPath)) return 'absent';
 
-  // What to say when the sealed file is no use: a warning if the secret can
-  // stand in for it, a problem if nothing can.
+  // What to say when the sealed file cannot be opened: a warning if the
+  // secret can stand in for it, a problem if nothing can.
   const refuse = (why) => {
     if (haveSecret) report.warning(`${why} The secret ANSWERS_JSON is used instead.`);
     else report.problem(`${why} Seal the answers again for the key in use (npm run answers:seal), or set the secret ANSWERS_JSON.`);
-    return false;
+    return 'unopened';
+  };
+
+  // A file that opened is the one this commit was sealed with. If it is not
+  // recognised, the fault is in this commit, and an older copy of the
+  // answers kept in a secret is not a substitute for it: it would be checked
+  // and seeded as if it belonged to rooms it has never heard of.
+  const unknown = () => {
+    report.problem(
+      `${SEALED} opened, but what was sealed in it is not recognised as an answers file. If a room was added, give its key a shape in scripts/lib/answers-shape.mjs.${
+        haveSecret ? ' The secret ANSWERS_JSON was not used in its place: it may be older than this commit.' : ''
+      }`,
+    );
+    return 'unrecognised';
   };
 
   if (!key) return refuse(`${SEALED} cannot be opened without the key.`);
@@ -173,11 +182,9 @@ function sealedAnswers(key, haveSecret) {
   try {
     value = JSON.parse(opened.plaintext);
   } catch {
-    return refuse(`${SEALED} opened, but what was sealed in it is not an answers file.`);
+    return unknown();
   }
-  if (typeof value !== 'object' || value === null || !looksLikeAnswers(value)) {
-    return refuse(`${SEALED} opened, but what was sealed in it is not an answers file.`);
-  }
+  if (!looksLikeAnswers(value)) return unknown();
 
   putAnswers(opened.plaintext);
   answersCameFrom('sealed');
@@ -186,7 +193,7 @@ function sealedAnswers(key, haveSecret) {
     report.note('The secret ANSWERS_JSON is set as well. It is not used: the sealed file belongs to this commit. The secret can be deleted.');
   }
   output('answers');
-  return true;
+  return 'placed';
 }
 
 function answers(key) {
@@ -194,11 +201,13 @@ function answers(key) {
   const haveSecret = raw.trim() !== '';
   const wantSeed = process.env.WANT_SEED === 'true';
 
-  if (sealedAnswers(key, haveSecret)) return;
+  const sealed = sealedAnswers(key, haveSecret);
+  // In place, or refused for a reason no secret can mend. Either way it has said so.
+  if (sealed === 'placed' || sealed === 'unrecognised') return;
 
   if (!haveSecret) {
     // A sealed file that could not be opened has already said so.
-    if (existsSync(path.join(root, SEALED))) return;
+    if (sealed !== 'absent') return;
     if (wantSeed) {
       report.problem(
         `This run needs the answers, but there is no ${SEALED} in the repository and the secret ANSWERS_JSON is not set. Seal them (npm run answers:seal), set the secret, or untick "Seed answers and room content".`,

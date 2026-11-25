@@ -376,6 +376,18 @@ The photographs are processed by `npm run cellar`
 `.image-src/goldmaker`. How each was made is in
 [`docs/image-prompts.md`](docs/image-prompts.md).
 
+### Adding a third room
+
+A room that keeps its sealed half in `answers.json` under a key of its own,
+as this one does under `goldmaker`, has to be made known in one more place:
+[`scripts/lib/answers-shape.mjs`](scripts/lib/answers-shape.mjs). The first
+step of a deploy opens `answers.sealed.json` and checks that what came out is
+an answers file before anything is installed, so it cannot read the
+TypeScript that describes the rooms. A key it has not been told about stops
+the deploy there, before anything is changed, and says so. The seed takes its
+list of such keys from the same file, and a unit test fails if the
+`answers.json` on your machine would be refused.
+
 ### A price
 
 File 002 is free for now, and the site makes no promise about later. There is
@@ -571,7 +583,7 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | 138 tests. The Gold-Maker's engine on a made-up cellar, the real cellar as it is written, and its sealed half walked from the door to the report. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Every photograph of the venue is on disk at each width the page offers, and none is heavy. Nothing from `answers.json` is in a tracked file. |
+| `npm run test:unit` | 146 tests. The Gold-Maker's engine on a made-up cellar, the real cellar as it is written, and its sealed half walked from the door to the report. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Every photograph of the venue is on disk at each width the page offers, and none is heavy. Nothing from `answers.json` is in a tracked file. |
 | `npm run test:rules` | 49 tests with `@firebase/rules-unit-testing`: in File 002 the cellar is shown only to a visitor with a file, what it keeps to itself is never readable, and nobody can make or change their own file. In File 001: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. Nobody can read or write the contact inbox. |
 | `npm run test:functions` | 55 tests driving `checkAnswer`, `signOath`, `takeHint`, `accuse`, `sendMessage` and `goldmaker` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, a case that is counted once, and a contact form that tidies what it is sent, refuses what is wrong and stops at three messages a day. |
 | `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`, and nothing from the cellar of File 002, open half or sealed. |
@@ -656,7 +668,9 @@ The answers need no secret. They are in the repository as
 it (see [Sealed answers](#sealed-answers)). If you ever replace the key, run
 `npm run answers:seal` again and commit the result. A secret named
 `ANSWERS_JSON`, holding the contents of `answers.json`, is still read as a
-fallback when there is no sealed file the key can open.
+fallback when there is no sealed file the key can open. It is never used in
+place of a sealed file that did open: that file belongs to the commit being
+deployed, and the secret may be older. If one is set, it can be deleted.
 
 **3. Check the setup.** Open
 [Check deploy setup](https://github.com/Innovatiff/ashgrove-file/actions/workflows/check.yml)
@@ -688,7 +702,7 @@ owner of the repository.
 | --- | --- |
 | Firestore rules and indexes | `firebase deploy --only firestore:rules,firestore:indexes` |
 | Cloud Functions | `firebase deploy --only functions` |
-| Seed answers and room content | `npm run seed:prod`, from the `ANSWERS_JSON` secret |
+| Seed answers and room content | `npm run seed:prod`, from `answers.sealed.json` |
 | The website | `firebase deploy --only hosting` |
 
 The deploy starts with the same checks. If a secret is missing or cannot be
@@ -977,7 +991,8 @@ scripts/
   ci-credentials.mjs         puts the key and the answers in place for a deploy
   ci-preflight.mjs           asks Google, read-only, whether the project is ready
   lib/                       secret-json (repairs a pasted key), sealed-answers,
-                             google-preflight, ci-report
+                             answers-shape (what the deploy takes for an
+                             answers file), google-preflight, ci-report
   check-bundle.ts            fails if anything secret is in /out
   process-images.mjs         the room's sources to 2400px WebP
   process-venue.mjs          the venue's photographs to WebP, at several widths

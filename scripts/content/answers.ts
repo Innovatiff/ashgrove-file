@@ -8,6 +8,7 @@
 
 import { type GateId, HINT_TIERS, isGateId, ROOM_ORDER, THRESHOLD, VERDICT } from '../../functions/src/config/game';
 import { normaliseAnswer } from '../../functions/src/lib/answers';
+import { ROOM_KEYS } from '../lib/answers-shape.mjs';
 import type { EvidenceContent } from './types';
 
 /** A card a solved gate gives up. */
@@ -43,8 +44,12 @@ export interface AnswersFile {
  * Entries of answers.json that belong to other rooms. File 002, The
  * Gold-Maker, keeps its sealed half under "goldmaker", read by
  * scripts/content/goldmaker-secrets.ts.
+ *
+ * The list is kept in scripts/lib/answers-shape.mjs, with the shape of each
+ * room's entry, because the first step of the deploy needs it before
+ * TypeScript can be read. A room added there is skipped here.
  */
-export const OTHER_ROOMS: readonly string[] = ['goldmaker'];
+export const OTHER_ROOMS: readonly string[] = ROOM_KEYS;
 
 const isText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 const isObject = (value: unknown): value is Record<string, unknown> =>

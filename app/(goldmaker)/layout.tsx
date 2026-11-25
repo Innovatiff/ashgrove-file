@@ -20,7 +20,8 @@ export const metadata: Metadata = {
   title: { default: 'The Gold-Maker', template: '%s / The Gold-Maker' },
   description,
   applicationName: 'The Gold-Maker',
-  // Until door 002 is opened on the main website, nothing should list this room.
+  // The front page may be listed once door 002 is open on the main website.
+  // The cellar itself never is: its own page says so, and so does robots.txt.
   robots: LISTED ? undefined : { index: false, follow: false },
   openGraph: {
     type: 'website',

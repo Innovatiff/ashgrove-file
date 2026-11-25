@@ -30,6 +30,7 @@ import {
   type Secrets,
   TRY_LIMIT,
 } from '../../functions/src/goldmaker/shape';
+import robots from '../../app/robots';
 import sitemap from '../../app/sitemap';
 import { LISTED } from '../../lib/goldmaker/listing';
 import { allNotes, buildWorld, flagsOf, lockIsOpen, notesAbout, tally } from '../../lib/goldmaker/world';
@@ -458,6 +459,19 @@ describe('The Gold-Maker: its door on the main website', () => {
       const text = readFileSync(path.join(root, file), 'utf8');
       assert.ok(!/gold-?maker/i.test(text), `${file} names the room, and its door is still sealed`);
     }
+  });
+
+  it('lets its front page be found once it is open, and never the cellar', () => {
+    const layout = readFileSync(path.join(root, 'app/(goldmaker)/layout.tsx'), 'utf8');
+    const cellar = readFileSync(path.join(root, 'app/(goldmaker)/goldmaker/cellar/page.tsx'), 'utf8');
+    // The front page asks not to be listed only while the door is sealed.
+    assert.ok(layout.includes('robots: LISTED ? undefined : { index: false, follow: false }'));
+    // The inside of the room asks not to be listed whatever the door says.
+    assert.ok(/robots: \{ index: false, follow: false \}/.test(cellar), 'the cellar page no longer asks search engines to stay out');
+    const rules = robots().rules;
+    const disallow = (Array.isArray(rules) ? rules[0]?.disallow : rules.disallow) ?? [];
+    assert.ok([...disallow].includes(CELLAR_ROUTE), 'robots.txt no longer keeps search engines out of the cellar');
+    assert.ok(![...disallow].some((blocked) => BASE_ROUTE === blocked || BASE_ROUTE.startsWith(`${blocked}/`)), 'robots.txt blocks the front page itself');
   });
 });
 

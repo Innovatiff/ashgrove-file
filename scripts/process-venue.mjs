@@ -39,9 +39,15 @@ export const PHOTOS = [
   { name: 'lockers', widths: [640, 960, 1280] },
   { name: 'corridor', widths: [960, 1600, 2400] },
   { name: 'keys', widths: [800, 1200, 1600] },
-  // The first hook of the key rack, close: the key that can be taken.
-  { name: 'key', from: 'keys', crop: { left: 124, top: 330, width: 1958, height: 1700 }, widths: [560, 1000] },
+  // The keys that can be taken, close. One piece of the key rack, cut in two
+  // between the first hook and the second, so that the two halves sit side by
+  // side on the page as one picture and each is the way into its own room.
+  // `key2` runs on to the first sealed envelope. When a third room opens,
+  // these are cut again: one piece for each key.
+  { name: 'key', from: 'keys', crop: { left: 124, top: 330, width: 781, height: 1700 }, widths: [300, 560, 780] },
+  { name: 'key2', from: 'keys', crop: { left: 905, top: 330, width: 1177, height: 1700 }, widths: [440, 800, 1176] },
   { name: 'door', widths: [640, 960, 1280] },
+  { name: 'door2', widths: [640, 960, 1280] },
 ];
 
 await mkdir(outDir, { recursive: true });

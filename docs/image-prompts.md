@@ -365,7 +365,7 @@ runs off, resizes to 2400 px on the long edge and rewrites
 
 # The venue: the main website's photographs
 
-The seven photographs in `/public/venue` are of the place the main website
+The eight photographs in `/public/venue` are of the place the main website
 pretends to be: the reception of an escape room venue, and what is down its
 corridor. There is no such building. Like the room's pictures, they were
 generated with the Higgsfield MCP.
@@ -378,7 +378,7 @@ generated with the Higgsfield MCP.
 | Resolution | `4k` (3840 px on the long edge for 21:9 and 16:9; 3504 px for 3:2; 3200 px for 4:5) |
 | Quality | `high` |
 | Variations | 2 per photograph, 1 kept |
-| Reference | The kept reception photograph, passed as `image_references` to the other six |
+| Reference | The kept reception photograph, passed as `image_references` to the others. A retake is given the picture it replaces. |
 | Final files | `scripts/process-venue.mjs`: WebP, quality 80, at two or three widths each |
 
 The reception was made first, on its own. The other six were then made with
@@ -410,7 +410,8 @@ A variation was kept only if all four held:
 4. **It is the same building as the reception.**
 
 All fourteen renders passed, so each choice below was between two good
-pictures.
+pictures. So did the eight made when door 002 opened, except one: a door
+whose hinges were on the same side as its lock.
 
 ## What is in the pictures, and what follows from it
 
@@ -420,6 +421,13 @@ pictures.
 - **The room numbers 001 to 005** are on the doors in `corridor` and on the
   plates in `keys`. If the catalogue grows past five or a number changes,
   retake those two.
+- **Which doors are open** is in three pictures: the key rack on the wall of
+  `reception`, the doors of `corridor` and the hooks of `keys`. An open room
+  has a key with a tag where a sealed one has an envelope under wax, and a
+  door standing ajar where a sealed one has a seal over its lock. When a door
+  opens, those three are retaken and the new room's own door is photographed
+  ([When a door opens](#when-a-door-opens), below). The pictures now show 001
+  and 002 open.
 - **The clock** in `reception` stands at ten past ten. It is a photograph and
   does not move. The lobby clock that does is the one on the board, on the
   page.
@@ -435,6 +443,16 @@ Kept: `eb96460d-29d8-4812-976a-3dfa962a7ea6`. Not kept: `9fadb8e1-ca50-447e-a8ee
 Why this one: the edge of the open front door is in the left of the frame,
 with its brass knob, so the picture is taken from where a visitor stands. The
 other is the same room seen square on, from nowhere in particular.
+
+**Retaken when door 002 opened.** Kept: `82f95414-8bc0-4a66-9d48-11c55c937dd2`.
+Not kept: `5a761255-7494-4c4f-8123-8d2b0e75dcb8`. The reference was the
+photograph above, and the prompt asks for the same picture with one change:
+
+> Retake of the reference photograph, from the same spot with the same camera: the same wide interior photograph, taken from just inside the front door, looking across the reception of a small escape room venue in an old townhouse. Keep everything exactly as it is in the reference: the framing, the edge of the open front door with its brass knob at the left, the coat hooks with the dark hat and the coat, the umbrella stand and the fern in its pot, the long dark oak reception desk with the brass plaque on its front that reads RECEPTION, the brass call bell, the open guest ledger with the fountain pen, the brass banker's lamp with the deep red glass shade, switched on, the small brass-bound wooden lockbox with a paper tag tied to it, the leather chair behind the desk, the brass letters on the cream wall that spell UNSEALED, the large round brass-rimmed wall clock showing ten past ten with the small brass plate fixed under it, its engraving too small to read, the red velvet rope hanging between two brass posts across the opening of the corridor at the right, the small wooden sign hanging above it that reads ROOMS with an arrow pointing right, and the corridor running back past closed doors and lit brass wall lamps. One thing only has changed since the reference was taken. On the dark wooden key rack to the right of the brass letters, with its single row of five brass hooks, a key with a cream paper tag now hangs from each of the first two hooks: the old brass key on the first hook, as in the reference, and a darker old iron key on the second hook. Each of the other three hooks holds a small cream envelope closed with a round red wax seal. Two keys, then three envelopes, five hooks in all. Full-frame camera on a tripod, 24mm lens, f/8, natural perspective, straight verticals. Editorial interior photography of a real place: cream plaster walls above dark oak panelling, black-and-cream checkerboard tiled floor, aged brass fittings, deep oxblood red accents. Warm light from the lamps, soft natural shadows, true-to-life colour, fine detail, slight wear on every surface. No people. No watermark, no logo, no text other than what is described.
+
+Why this one: the two keys are of a size. In the other the iron key is half
+as long again as the brass one. Everything else in both is the reception as
+it was: the letters, the plaque, the sign, the clock at ten past ten.
 
 ### desk (16:9)
 
@@ -474,6 +492,16 @@ Why this one: door 001 stands wider open and its light reaches further across
 the floor. On a phone the picture is cropped from the right, and that door
 and its light are what is left.
 
+**Retaken when door 002 opened.** Kept: `1407cdb2-7b89-441e-96a2-1ad2eb8c05f9`.
+Not kept: `809cf53f-a5b8-41e4-9b10-f84a3f5fccdc`. The reference was the
+photograph above.
+
+> Retake of the reference photograph, from the same spot with the same camera: the same straight-on photograph of one long wall of the corridor of a small escape room venue, framed like an architectural elevation, 28mm lens, straight verticals. Keep everything exactly as it is in the reference: five completely different doors side by side along the wall, each with a small brass number plate above it; the plates read 001, 002, 003, 004 and 005 from left to right; the lit brass wall lamps with frosted glass shades on the wall between the doors; dark oak panelling below, cream plaster above, black-and-cream checkerboard tiled floor across the foreground. Door 001, the plain panelled door painted cream, stands ajar with strong warm orange lamplight spilling out through the gap and across the floor, exactly as in the reference. One thing only has changed since the reference was taken: room 002 has opened. Door 002, the arched door of dark oak planks with black iron strap hinges, now stands ajar as well, swung open toward the corridor on its hinges the way door 001 is, and flickering golden firelight spills out through the gap and across the checkerboard floor. Through the gap there is a glimpse of a rough stone wall lit by fire. The red wax seal that was pressed over the lock of door 002 is gone. Door 003, the round steel vault door with the spoked brass wheel, door 004, the tall pair of dark panelled double doors under the small classical pediment, and door 005, the tiny arched door only knee high, are still shut, and each still has its large round red wax seal pressed over its lock, exactly as in the reference. Two doors open, then three doors sealed, five doors in all. Editorial interior photography of a real place: cream plaster walls above dark oak panelling, black-and-cream checkerboard tiled floor, aged brass fittings, deep oxblood red accents. Warm light from the lamps, soft natural shadows, true-to-life colour, fine detail, slight wear on every surface. No people. No watermark, no logo, no text other than what is described.
+
+Why this one: behind door 002 there is a fire basket on a stone floor against
+a rough stone wall, which is a cellar. In the other there is a fireplace on
+the corridor's own chequered tiles, and the door has grown a brass knob.
+
 ### keys (3:2)
 
 Kept: `02e4aa31-81f3-4f7a-854b-d139299606d1`. Not kept: `10238845-1a63-438a-8c8f-e974d62788af`.
@@ -483,8 +511,22 @@ Kept: `02e4aa31-81f3-4f7a-854b-d139299606d1`. Not kept: `10238845-1a63-438a-8c8f
 Why this one: both are right and there is nothing to choose between them. The
 first was kept.
 
-`key`, the close picture of the first hook beside the headline, is not a
-photograph of its own. It is cut from this one by `scripts/process-venue.mjs`.
+**Retaken when door 002 opened.** Kept: `cc077015-1a6c-4472-bcbb-95353ba4d13f`.
+Not kept: `83694505-7af2-44c0-939e-42afa732b892`. The reference was the
+photograph above.
+
+> Retake of the reference photograph, from the same spot with the same camera: the same close photograph of the same key rack, 50mm lens, straight on, warm side light from a lamp. Keep everything exactly as it is in the reference: the dark wooden board on the cream plaster wall, the five brass hooks in a single row, and the small brass number plate fixed above each hook. The plates read 001, 002, 003, 004 and 005 from left to right. From hook 001 hangs the old brass key on a ring with a cream paper luggage tag on string, and the tag is stamped with the single word OPEN in red ink, exactly as in the reference. One thing only has changed since the reference was taken: room 002 has opened. The envelope that hung from hook 002 is gone, and in its place hangs a second key on a ring: a heavier, older key of dark iron with a round bow, with its own cream paper luggage tag on string, and that tag too is stamped with the single word OPEN in red ink. From each of hooks 003, 004 and 005 still hangs a small cream envelope closed with a round red wax seal, exactly as in the reference. Two keys, each with a tag stamped OPEN, then three sealed envelopes, five hooks in all. Editorial interior photography of a real place: cream plaster wall, aged brass fittings, deep oxblood red accents. Warm light from a lamp, soft natural shadows, true-to-life colour, fine detail, slight wear on every surface. No people. No watermark, no logo, no text other than what is described.
+
+Why this one: again there is nothing to choose between them, and the first
+was kept.
+
+`key` and `key2`, the close pictures of the keys beside the headline, are not
+photographs of their own. They are one piece of this one, cut in two between
+the first hook and the second by `scripts/process-venue.mjs`, so that side by
+side on the page they are still one picture and each half is a link to its
+own room. The second runs on to the first sealed envelope. The stylesheet
+sets them side by side in the proportions they were cut in, and a unit test
+fails if the two disagree.
 
 ### door (4:5)
 
@@ -495,6 +537,20 @@ Kept: `3c7c9afa-c3ad-4375-ba26-39ca71a4d407`. Not kept: `3bf31180-b509-4e3d-b6d8
 Why this one: the door frame is dark oak, as it is on door 001 in the
 photograph of the corridor. In the other the frame is painted cream.
 
+### door2 (4:5)
+
+Made when door 002 opened. Kept: `93f24210-f4a8-416c-bfa0-44c40d0d758e`. Not
+kept: `4e98c779-fc0d-4bca-9652-53a487f98b30`. Two references: the photograph
+of door 001 above, for how it is taken, and the first photograph of the
+corridor, for what door 002 looks like.
+
+> Photograph in the corridor of the same venue as the reference images, a companion to the first reference photograph, which is of door 001, and taken the same way. This one is of door 002: the arched door of dark oak planks with black iron strap hinges, in its arched dark oak frame, the door under the plate 002 in the second reference photograph, which shows the whole corridor. Door 002 stands a hand's width ajar. Flickering golden firelight spills through the gap across the black-and-cream checkerboard tiled floor and up the dark oak panelling, and through the gap there is a glimpse of a rough stone wall. A small brass number plate above the door reads 002. An old dark iron key with a cream paper luggage tag hangs in the lock. There is no wax seal on the door. A lit brass wall lamp with a frosted glass shade beside the door; the rest of the corridor falls away into warm shadow. 35mm lens, seen from a few steps back, slightly to one side. Editorial interior photography of a real place: cream plaster walls above dark oak panelling, black-and-cream checkerboard tiled floor, aged brass fittings, deep oxblood red accents. Warm light from the lamps, soft natural shadows, true-to-life colour, fine detail, slight wear on every surface. No people. No watermark, no logo, no text other than what is described.
+
+Why this one: its hinges are on one side and its lock on the other. In the
+other both are on the side the door opens at, which no door can do. What
+hangs in the lock is an iron ring with the tag on it, and the description on
+the page says so.
+
 ## Retaking a photograph
 
 1. Generate with the model and settings above, the prompt and the style
@@ -503,8 +559,40 @@ photograph of the corridor. In the other the frame is painted cream.
    from the new one.
 2. Read every word and number in the result at full size.
 3. Save the PNG as `.image-src/venue/{name}.png` (the folder is git-ignored).
-4. Run `npm run venue -- --only {name}`. For `keys`, also `--only key`.
+4. Run `npm run venue -- --only {name}`. For `keys`, also `--only key,key2`.
 5. If it was the reception: `npm run build`, then `node scripts/make-og.mjs`.
+
+## When a door opens
+
+The building has to be the same building afterwards, with one more door open
+in it. So a picture that shows which doors are open is not made again from
+its first prompt. It is retaken from itself: the picture it replaces is the
+reference image, and the prompt says "retake of the reference photograph,
+from the same spot with the same camera", lists what must stay exactly as it
+is, and then names the one thing that has changed. The three retakes above
+are the pattern. Each came back as the same photograph with that one change.
+
+1. **`reception`**: one more key with a tag on the rack, one envelope fewer.
+2. **`corridor`**: the new room's door ajar, its seal gone, its own light
+   coming through the gap. Say what kind of light and what can be glimpsed
+   inside, from what the room's own front page shows.
+3. **`keys`**: a key on a ring where its envelope was, with a tag stamped
+   `OPEN`. Give it a different metal or pattern from the others.
+4. **The room's own door**, like `door` and `door2`: two references, an
+   existing door photograph for how it is taken and the corridor for what the
+   door looks like. Check which side its hinges are on.
+5. Read every plate, tag, letter and number in all of them at full size.
+6. Cut the keys again in `scripts/process-venue.mjs`: one piece of `keys`
+   from the first hook to the first sealed envelope, cut between the hooks,
+   one part for each key. The cuts are in pixels of the source. Give the
+   stylesheet's `.keyshots` the same proportions.
+7. Process them (`npm run venue`), say which key and door belong to the room
+   in `lib/site/venue.ts`, write the three descriptions on the home page
+   again, and redraw the link preview (`npm run build`, then
+   `node scripts/make-og.mjs`).
+
+The pictures they replaced are not in the repository. Their job ids are
+above, under each photograph.
 
 # The cellar: File 002's pictures
 

@@ -58,8 +58,8 @@ export function Consent() {
             May the Mint keep count?
           </p>
           <p className="mt-1 max-w-[76ch]">
-            Google Analytics would count the locks you open and the questions you ask the captain. It sets cookies to do
-            it. You can play without it, and it stays off unless you allow it.{' '}
+            Google Analytics would count that you went in, the questions you ask the captain and whether you get out.
+            It sets cookies to do it. You can play without it, and it stays off unless you allow it.{' '}
             {standingAnswer ? <span data-testid="consent-standing">{standingAnswer} </span> : null}
             <a href={PRIVACY} className="link">
               What is kept

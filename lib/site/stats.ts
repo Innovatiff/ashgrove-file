@@ -1,11 +1,13 @@
+import type { RoomTally } from '@/lib/site/catalogue';
+
 /**
- * The public counters of The Ashgrove File, read without the Firebase SDK.
+ * The public counters of the open rooms, read without the Firebase SDK.
  *
- * stats/global is readable by anyone (see firestore.rules), so the main
- * website asks Firestore's REST API for it with one plain request. That keeps
- * Firebase, and the anonymous sign-in that comes with it, off every page of
- * the main website: a visitor is not given an account until they walk into a
- * room.
+ * Each room keeps two numbers in a document of its own under stats/, which
+ * anyone may read (see firestore.rules). The main website asks Firestore's
+ * REST API for each with one plain request. That keeps Firebase, and the
+ * anonymous sign-in that comes with it, off every page of the main website:
+ * a visitor is not given an account until they walk into a room.
  */
 
 export interface RoomCount {
@@ -13,13 +15,16 @@ export interface RoomCount {
   closed: number;
 }
 
+/** A document under stats/ is named in lowercase letters and nothing else. */
+const STATS_ID = /^[a-z]{1,40}$/;
+
 const PROJECT = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const USE_EMULATORS = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === 'true';
 
-function statsUrl(): string | null {
-  if (!PROJECT) return null;
-  const path = `/v1/projects/${PROJECT}/databases/(default)/documents/stats/global`;
+function statsUrl(stats: string): string | null {
+  if (!PROJECT || !STATS_ID.test(stats)) return null;
+  const path = `/v1/projects/${PROJECT}/databases/(default)/documents/stats/${stats}`;
   if (USE_EMULATORS) {
     const host = typeof window === 'undefined' ? '127.0.0.1' : window.location.hostname || '127.0.0.1';
     return `http://${host}:8080${path}`;
@@ -33,9 +38,9 @@ function count(value: unknown): number {
   return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
 }
 
-/** null when the counters cannot be read. The page then says nothing. */
-export async function readRoomCount(signal?: AbortSignal): Promise<RoomCount | null> {
-  const url = statsUrl();
+/** One room's counters. null when they cannot be read: the page then says nothing. */
+export async function readRoomCount(stats: string, signal?: AbortSignal): Promise<RoomCount | null> {
+  const url = statsUrl(stats);
   if (!url) return null;
   try {
     const response = await fetch(url, { signal, credentials: 'omit' });
@@ -49,21 +54,46 @@ export async function readRoomCount(signal?: AbortSignal): Promise<RoomCount | n
   }
 }
 
-let once: Promise<RoomCount | null> | undefined;
+const once = new Map<string, Promise<RoomCount | null>>();
 
-/** The same counters, asked for once however many parts of the page show them. */
-export function roomCountOnce(): Promise<RoomCount | null> {
-  once ??= readRoomCount();
-  return once;
+/** One room's counters, asked for once however many parts of the page show them. */
+export function roomCountOnce(stats: string): Promise<RoomCount | null> {
+  let asked = once.get(stats);
+  if (!asked) {
+    asked = readRoomCount(stats);
+    once.set(stats, asked);
+  }
+  return asked;
+}
+
+/** Adds rooms up. If any one of them is not known, neither is the total. */
+export function addCounts(counts: ReadonlyArray<RoomCount | null>): RoomCount | null {
+  let entered = 0;
+  let closed = 0;
+  for (const count of counts) {
+    if (!count) return null;
+    entered += count.entered;
+    closed += count.closed;
+  }
+  return counts.length > 0 ? { entered, closed } : null;
+}
+
+/**
+ * Everyone who has gone into any of these rooms, and everyone who has come
+ * out of one. null if any room's counters cannot be read: a total with a
+ * room missing from it would be a wrong number, and the page shows none.
+ */
+export async function buildingCountOnce(stats: readonly string[]): Promise<RoomCount | null> {
+  return addCounts(await Promise.all(stats.map(roomCountOnce)));
 }
 
 const number = new Intl.NumberFormat('en-GB');
 
-/** One plain sentence about who has been in, and who has come out. */
-export function describeCount({ entered, closed }: RoomCount): string {
-  if (entered === 0) return 'Nobody has gone in yet.';
-  const went = entered === 1 ? 'One detective has gone in.' : `${number.format(entered)} detectives have gone in.`;
-  if (closed === 0) return `${went} Nobody has closed the case.`;
-  const came = closed === 1 ? 'One has closed the case.' : `${number.format(closed)} have closed the case.`;
+/** One plain sentence about who has been in a room, and who has come out, in that room's own words. */
+export function describeCount({ entered, closed }: RoomCount, words: RoomTally): string {
+  if (entered === 0) return words.nobody;
+  const say = (line: string, n: number) => line.replace('{n}', number.format(n));
+  const went = entered === 1 ? words.in[0] : say(words.in[1], entered);
+  const came = closed === 0 ? words.out[0] : closed === 1 ? words.out[1] : say(words.out[2], closed);
   return `${went} ${came}`;
 }

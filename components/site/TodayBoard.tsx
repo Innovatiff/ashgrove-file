@@ -5,7 +5,7 @@ import { useSeconds } from '@/lib/clock';
 import { ledgerCount } from '@/lib/format';
 import type { OpenRoom, SealedRoom } from '@/lib/site/catalogue';
 import { CLOCK_FAST_MINUTES } from '@/lib/site/practice';
-import { type RoomCount, roomCountOnce } from '@/lib/site/stats';
+import { buildingCountOnce, type RoomCount } from '@/lib/site/stats';
 
 const two = (n: number) => String(n).padStart(2, '0');
 
@@ -13,9 +13,9 @@ const two = (n: number) => String(n).padStart(2, '0');
  * The board behind the desk: what is open today, what is still sealed, how
  * many have gone in and come out, and what the lobby clock says.
  *
- * The two numbers are the first open room's own public counters, read when
- * the page loads. Until they arrive, and if they never do, the board shows
- * dashes, never a made-up number.
+ * The two numbers are the open rooms' own public counters added together,
+ * read when the page loads. Until they arrive, and if any one of them never
+ * does, the board shows dashes, never a made-up number.
  *
  * The lobby clock is the visitor's own time, ten minutes fast, which is what
  * the brass plate under the clock in the photograph says it runs. Anyone who
@@ -26,15 +26,18 @@ export function TodayBoard({ open, sealed }: { open: readonly OpenRoom[]; sealed
   const [count, setCount] = useState<RoomCount | null>(null);
   const seconds = useSeconds();
 
+  // The ids of the documents the counters are in, as one string, so that the
+  // question is asked once and not again every time the clock ticks.
+  const asked = open.map((room) => room.stats).join(' ');
   useEffect(() => {
     let gone = false;
-    void roomCountOnce().then((found) => {
+    void buildingCountOnce(asked.split(' ').filter(Boolean)).then((found) => {
       if (found && !gone) setCount(found);
     });
     return () => {
       gone = true;
     };
-  }, []);
+  }, [asked]);
 
   const first = sealed[0]?.number;
   const last = sealed[sealed.length - 1]?.number;

@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { Arrow } from '@/components/site/Arrow';
 import { Colophon } from '@/components/site/Colophon';
 import { Masthead } from '@/components/site/Masthead';
+import { RoomButtons } from '@/components/site/RoomButtons';
 import { WaxSeal } from '@/components/site/Seal';
 import { SITE } from '@/lib/site/brand';
-import { ASHGROVE } from '@/lib/site/catalogue';
 import { NOT_FOUND_FONTS } from '@/lib/site/fonts-404';
 import './(site)/site.css';
 
@@ -45,9 +45,7 @@ export default function GlobalNotFound() {
                   Back to the corridor
                   <Arrow />
                 </Link>
-                <a href={ASHGROVE.href} className="btn btn--ghost">
-                  {ASHGROVE.enter}
-                </a>
+                <RoomButtons className="btn btn--ghost" />
               </div>
             </div>
             <div className="mx-auto w-40 md:col-span-4 md:w-56">

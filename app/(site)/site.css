@@ -42,6 +42,9 @@
   --night: #050505;
   --night-paper: #c9c5bd;
   --ember: #ff6a1a;
+  --pitch: #0d1916;
+  --pitch-bone: #e4dcc6;
+  --pitch-brass: #dba945;
 
   --wrap: 1240px;
   --pad: clamp(20px, 5vw, 64px);
@@ -73,6 +76,7 @@
   --font-display: var(--font-fraunces), 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
   --font-sans: var(--font-instrument), ui-sans-serif, system-ui, 'Segoe UI', Helvetica, Arial, sans-serif;
   --font-fell: var(--font-fell-sc), 'IM Fell English SC', 'Iowan Old Style', Georgia, serif;
+  --font-grenze: var(--font-grenze-plate), 'Grenze Gotisch', 'Iowan Old Style', Georgia, serif;
 }
 
 /* ------------------------------------------------------------------ base -- */
@@ -355,6 +359,12 @@
   flex: none;
   transition: transform 0.16s var(--ease);
 }
+/* A room's number at the head of its button, where there is more than one. */
+.btn__n {
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  opacity: 0.72;
+}
 @media (hover: hover) {
   .btn:hover:not(:disabled) .btn__arrow {
     transform: translateX(3px);
@@ -428,15 +438,35 @@
 }
 
 .plate__world {
+  /* The Ashgrove File's, unless the room says otherwise below. */
+  --world: var(--night);
+  --world-ink: var(--night-paper);
+  --world-title: var(--night-paper);
+  --world-accent: var(--ember);
+  --world-face: var(--font-fell);
   position: relative;
   display: flex;
   min-height: clamp(280px, 44vw, 520px);
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
-  background: var(--night);
-  color: var(--night-paper);
+  background: var(--world);
+  color: var(--world-ink);
   padding: clamp(20px, 3vw, 40px);
+}
+/* The Gold-Maker: verdigris and brass, and a blackletter for its name. */
+.plate__world--goldmaker {
+  --world: var(--pitch);
+  --world-ink: var(--pitch-bone);
+  --world-title: var(--pitch-brass);
+  --world-face: var(--font-grenze);
+}
+.plate__world--goldmaker .plate__title {
+  font-weight: 500;
+  letter-spacing: 0.005em;
+}
+.plate__world--goldmaker .plate__image {
+  object-position: 62% 50%;
 }
 .plate__image {
   position: absolute;
@@ -456,18 +486,18 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--night-paper);
+  color: var(--world-ink);
 }
 .plate__title {
   position: relative;
-  font-family: var(--font-fell);
+  font-family: var(--world-face);
   font-size: clamp(2.25rem, 4.6vw, 4rem);
   line-height: 1;
   letter-spacing: 0.01em;
-  color: var(--night-paper);
+  color: var(--world-title);
 }
 .plate__title span {
-  color: var(--ember);
+  color: var(--world-accent);
 }
 
 .plate__body {
@@ -828,16 +858,33 @@ select.input {
   gap: 20px;
 }
 
-/* The key on its hook, close. The whole picture is the way into the room. */
-.keyshot {
-  display: block;
+/* The keys on their hooks, close: one piece of the key rack, cut between the
+   hooks. The pieces sit side by side with a hairline between them, in the
+   proportions they were cut in (scripts/process-venue.mjs), so together they
+   are still one picture. Each piece is the way into its own room. */
+.keyshots {
+  display: grid;
+  grid-template-columns: 781fr 1177fr;
+  gap: 1.5px;
   border: 1.5px solid var(--ink);
+  background: var(--ink);
+}
+/* One key alone has the whole width. */
+.keyshots:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.keyshot {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
   background: var(--ink);
 }
 .keyshot img {
   display: block;
   width: 100%;
   height: auto;
+  flex: 1 1 auto;
+  object-fit: cover;
 }
 .keyshot__note {
   display: flex;
@@ -845,6 +892,7 @@ select.input {
   justify-content: space-between;
   gap: 12px;
   padding: 13px 16px;
+  white-space: nowrap;
   border-top: 1.5px solid var(--ink);
   background: var(--card);
   font-size: 0.9375rem;
@@ -862,6 +910,69 @@ select.input {
     color: var(--bone);
   }
   .keyshot:hover .btn__arrow {
+    transform: translateX(3px);
+  }
+}
+
+/* The open doors, side by side at the foot of the page. Each is a way in. */
+.doors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 24px);
+}
+.doors:has(> :only-child) {
+  grid-template-columns: minmax(0, 22rem);
+  justify-content: end;
+}
+.doorway {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+}
+.doorway img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.doorway__note {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-top: 1.5px solid var(--ink);
+  background: var(--card);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  transition:
+    background-color 0.16s var(--ease),
+    color 0.16s var(--ease);
+}
+.doorway__n {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: color 0.16s var(--ease);
+}
+.doorway__note .btn__arrow {
+  flex: none;
+  transition: transform 0.16s var(--ease);
+}
+@media (hover: hover) {
+  .doorway:hover .doorway__note {
+    background: var(--wax);
+    color: var(--bone);
+  }
+  .doorway:hover .doorway__n {
+    color: var(--bone);
+  }
+  .doorway:hover .btn__arrow {
     transform: translateX(3px);
   }
 }

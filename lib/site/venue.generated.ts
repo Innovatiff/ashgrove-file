@@ -57,11 +57,21 @@ export const venuePhotos = {
     ],
   },
   key: {
-    width: 1000,
-    height: 868,
+    width: 780,
+    height: 1698,
     sources: [
+      { src: '/venue/key-300.webp', width: 300 },
       { src: '/venue/key-560.webp', width: 560 },
-      { src: '/venue/key-1000.webp', width: 1000 },
+      { src: '/venue/key-780.webp', width: 780 },
+    ],
+  },
+  key2: {
+    width: 1176,
+    height: 1699,
+    sources: [
+      { src: '/venue/key2-440.webp', width: 440 },
+      { src: '/venue/key2-800.webp', width: 800 },
+      { src: '/venue/key2-1176.webp', width: 1176 },
     ],
   },
   door: {
@@ -71,6 +81,15 @@ export const venuePhotos = {
       { src: '/venue/door-640.webp', width: 640 },
       { src: '/venue/door-960.webp', width: 960 },
       { src: '/venue/door-1280.webp', width: 1280 },
+    ],
+  },
+  door2: {
+    width: 1280,
+    height: 1600,
+    sources: [
+      { src: '/venue/door2-640.webp', width: 640 },
+      { src: '/venue/door2-960.webp', width: 960 },
+      { src: '/venue/door2-1280.webp', width: 1280 },
     ],
   },
 } as const;

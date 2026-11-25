@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Arrow } from '@/components/site/Arrow';
 import { PageHead } from '@/components/site/PageHead';
+import { RoomButtons } from '@/components/site/RoomButtons';
 import { SITE } from '@/lib/site/brand';
-import { ASHGROVE } from '@/lib/site/catalogue';
+import { ASHGROVE, GOLDMAKER, OPEN_ROOMS } from '@/lib/site/catalogue';
+
+// What is said here about a room is what the room does. When a room opens or
+// changes its rules, read this page again: the steps and the answers below
+// were written for the rooms that were open at the time.
 
 export const metadata: Metadata = {
   title: 'How it works',
@@ -22,15 +26,15 @@ const STEPS: ReadonlyArray<{ head: string; body: ReactNode }> = [
   },
   {
     head: 'Get through the door.',
-    body: 'The way in is the first lock. Nothing you need for it is anywhere but on that front page.',
+    body: 'The way in is on that front page, and so is everything you need for it.',
   },
   {
     head: 'Work through what is inside.',
-    body: 'A room gives you things to read and things to look at, and something to work out from them. Prove you have worked it out and the next part opens. A wrong answer costs you nothing but the guess.',
+    body: 'A room gives you things to read and things to look at, and something to work out from them. Prove you have worked it out and the next part opens. In one room a wrong answer costs nothing but the guess. In another it is marked against you, and the lock says so before you try it.',
   },
   {
     head: 'Leave when you like.',
-    body: 'Your place is saved every time a lock opens. Close the tab. The room will be where you left it.',
+    body: 'Your place is saved as you go. Close the tab. The room will be where you left it.',
   },
   {
     head: 'Reach the end.',
@@ -56,7 +60,19 @@ const QUESTIONS: ReadonlyArray<{ ask: string; answer: ReactNode }> = [
   },
   {
     ask: 'Does it cost anything?',
-    answer: <p>No. {ASHGROVE.title} is free to play.</p>,
+    // No more is said about a room's price than the room says itself.
+    answer: (
+      <>
+        {OPEN_ROOMS.map((room, index) => (
+          <p key={room.slug}>
+            {index === 0 ? 'No. ' : ''}
+            {room.free === 'always'
+              ? `${room.title} is free to play.`
+              : `${room.title} costs nothing to play for now. If that ever changes, its front page will say so before you go in.`}
+          </p>
+        ))}
+      </>
+    ),
   },
   {
     ask: 'Can I play on a phone?',
@@ -82,7 +98,7 @@ const QUESTIONS: ReadonlyArray<{ ask: string; answer: ReactNode }> = [
       <p>
         As long as you give it. Nothing counts down, and you do not have to finish in one sitting. {ASHGROVE.title}{' '}
         has seven rooms and a final accusation. It keeps a clock so you can see how long you took, but the clock never
-        runs out.
+        runs out. {GOLDMAKER.title} is one cellar, and takes about an hour.
       </p>
     ),
   },
@@ -91,7 +107,8 @@ const QUESTIONS: ReadonlyArray<{ ask: string; answer: ReactNode }> = [
     answer: (
       <p>
         Each room says what help it offers and what the help costs. In {ASHGROVE.title} every room has three hints,
-        from a nudge to the answer itself, and each one adds minutes to your time.
+        from a nudge to the answer itself, and each one adds minutes to your time. In {GOLDMAKER.title} the captain of
+        the guard answers questions through a hatch, and every answer is marked against your name.
       </p>
     ),
   },
@@ -108,9 +125,9 @@ const QUESTIONS: ReadonlyArray<{ ask: string; answer: ReactNode }> = [
     ask: 'Can I use a keyboard or a screen reader?',
     answer: (
       <p>
-        This website and {ASHGROVE.title} can be used with a keyboard alone, and both respect a reduced-motion
+        This website and the rooms on it can be used with a keyboard alone, and they respect a reduced-motion
         setting. Photographs and drawings carry text descriptions. Some puzzles depend on looking closely at a
-        drawing. If one of them stops you, <Link href="/contact">write to us</Link>.
+        picture. If one of them stops you, <Link href="/contact">write to us</Link>.
       </p>
     ),
   },
@@ -122,7 +139,7 @@ const QUESTIONS: ReadonlyArray<{ ask: string; answer: ReactNode }> = [
     ask: 'Something is broken.',
     answer: (
       <p>
-        <Link href="/contact">Tell us</Link>. Say which room, what you typed and what happened.
+        <Link href="/contact">Tell us</Link>. Say which room, what you did and what happened.
       </p>
     ),
   },
@@ -140,8 +157,8 @@ export default function HowItWorksPage() {
         }
       >
         <p>
-          An escape room here is a run of locked pages. You open them in order, by working out what is in front of
-          you. This is everything else worth knowing before you start.
+          An escape room here is a place with locks on it. You open them by working out what is in front of you.
+          This is everything else worth knowing before you start.
         </p>
       </PageHead>
 
@@ -191,18 +208,13 @@ export default function HowItWorksPage() {
       <section className="band band--ink" aria-labelledby="start-title">
         <div className="wrap grid items-end gap-x-12 gap-y-8 md:grid-cols-12">
           <div className="md:col-span-8">
-            <p className="label">
-              File {ASHGROVE.number} · {ASHGROVE.title}
-            </p>
+            <p className="label">{OPEN_ROOMS.map((room) => `${room.number} · ${room.title}`).join('  /  ')}</p>
             <h2 id="start-title" className="display display--2 mt-5">
-              That is all of it. The door is open.
+              That is all of it. {OPEN_ROOMS.length === 1 ? 'The door is open.' : 'The doors are open.'}
             </h2>
           </div>
           <div className="flex flex-wrap gap-3 md:col-span-4 md:justify-end">
-            <a href={ASHGROVE.href} className="btn btn--bone">
-              {ASHGROVE.enter}
-              <Arrow />
-            </a>
+            <RoomButtons className="btn btn--bone" />
           </div>
         </div>
       </section>

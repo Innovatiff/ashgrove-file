@@ -13,10 +13,12 @@ import robots from '../../app/robots';
 import sitemap from '../../app/sitemap';
 import { MAX_CONTACT_MESSAGE, MAX_CONTACT_NAME } from '../../functions/src/config/contact';
 import { BASE_ROUTE, OATH_ROUTE, ROOM_ORDER, routeForRoom, THRESHOLD_ROUTE, VERDICT_ROUTE } from '../../functions/src/config/game';
+import { BASE_ROUTE as GOLDMAKER_ROUTE, CELLAR_ROUTE, GAME as GOLDMAKER_GAME } from '../../functions/src/goldmaker/shape';
 import { LEGAL, NAV, SITE } from '../../lib/site/brand';
-import { ASHGROVE, CATALOGUE, OPEN_ROOMS, SEALED_ROOMS } from '../../lib/site/catalogue';
+import { ASHGROVE, CATALOGUE, GOLDMAKER, OPEN_ROOMS, SEALED_ROOMS } from '../../lib/site/catalogue';
 import { checkDraft, type ContactDraft } from '../../lib/site/contact';
-import { describeCount } from '../../lib/site/stats';
+import { addCounts, describeCount } from '../../lib/site/stats';
+import { ROOMS_IN_THE_PICTURES } from '../../lib/site/venue';
 
 const root = path.resolve(__dirname, '../..');
 const firebaseJson = JSON.parse(readFileSync(path.join(root, 'firebase.json'), 'utf8')) as {
@@ -42,11 +44,44 @@ describe('the catalogue', () => {
     assert.equal(OPEN_ROOMS[0], ASHGROVE);
   });
 
+  it('sends a visitor to the front page of The Gold-Maker', () => {
+    assert.equal(GOLDMAKER.href, GOLDMAKER_ROUTE);
+    assert.equal(GOLDMAKER.number, '002');
+    assert.equal(OPEN_ROOMS[1], GOLDMAKER);
+    assert.equal(GOLDMAKER.stats, GOLDMAKER_GAME, 'its counters are in stats/goldmaker, where its function writes them');
+  });
+
   it('gives every open room what a plate needs', () => {
     for (const room of OPEN_ROOMS) {
       assert.match(room.href, /^\/[a-z0-9-]+$/, `${room.title}: a room lives at one address of its own`);
       assert.ok(room.pitch.length > 40 && room.facts.length >= 2 && room.image.alt.length > 20);
       assert.ok(!NAV.some((item) => item.href === room.href) && !LEGAL.some((item) => item.href === room.href));
+      assert.ok(existsSync(path.join(root, 'public', room.image.src)), `${room.title}: ${room.image.src} is not on disk`);
+      assert.match(room.stats, /^[a-z]{1,40}$/, `${room.title}: its counters are one document under stats/`);
+      for (const line of [room.tally.in[1], room.tally.out[2]]) assert.ok(line.includes('{n}'), `${room.title}: "${line}" has nowhere to put the number`);
+      for (const line of [room.tally.nobody, room.tally.in[0], room.tally.out[0], room.tally.out[1]]) assert.ok(!line.includes('{n}') && line.endsWith('.'));
+    }
+    const addresses = OPEN_ROOMS.map((room) => room.href);
+    const slugs = OPEN_ROOMS.map((room) => room.slug);
+    const counters = OPEN_ROOMS.map((room) => room.stats);
+    assert.equal(new Set(addresses).size, addresses.length, 'two rooms share an address');
+    assert.equal(new Set(slugs).size, slugs.length, 'two rooms share a slug');
+    assert.equal(new Set(counters).size, counters.length, 'two rooms would be counted as one');
+  });
+
+  it('says no more about what a room costs than the room says itself', () => {
+    // File 001 is free, and the site says so without conditions.
+    assert.equal(ASHGROVE.free, 'always');
+    // File 002 costs nothing for now, and its own warrant says "for now".
+    // If either changes, they change together.
+    const warrant = readFileSync(path.join(root, 'components/goldmaker/Warrant.tsx'), 'utf8');
+    assert.equal(GOLDMAKER.free, 'for now');
+    assert.ok(/costs nothing to play for now/.test(warrant), 'the warrant no longer says "for now": does lib/site/catalogue.ts still tell the truth?');
+    // The pages that speak of a price take it from the catalogue.
+    for (const file of ['app/(site)/page.tsx', 'app/(site)/how-it-works/page.tsx']) {
+      const text = readFileSync(path.join(root, file), 'utf8');
+      assert.ok(text.includes('room.free'), `${file} should read what a room costs from the catalogue`);
+      assert.ok(!/is free to play\.<|costs nothing</.test(text), `${file} states a price in its own words`);
     }
   });
 });
@@ -60,7 +95,7 @@ describe('the addresses', () => {
 
   it('does not let a page of the main website take a room’s address', () => {
     for (const item of [...NAV, ...LEGAL]) {
-      assert.ok(!item.href.startsWith(BASE_ROUTE), `${item.href} would collide with the room`);
+      for (const room of OPEN_ROOMS) assert.ok(!item.href.startsWith(room.href), `${item.href} would collide with ${room.title}`);
     }
   });
 
@@ -86,10 +121,10 @@ describe('the addresses', () => {
   it('asks search engines to stay out of the rooms and lists the public pages', () => {
     const rules = robots().rules;
     const disallow = (Array.isArray(rules) ? rules[0]?.disallow : rules.disallow) ?? [];
-    assert.deepEqual(disallow, [OATH_ROUTE, `${BASE_ROUTE}/file/`, VERDICT_ROUTE]);
+    assert.deepEqual(disallow, [OATH_ROUTE, `${BASE_ROUTE}/file/`, VERDICT_ROUTE, CELLAR_ROUTE]);
 
     const listed = sitemap().map((entry) => entry.url.replace(SITE.url, '') || '/');
-    assert.deepEqual(listed, ['/', '/how-it-works', '/about', '/contact', '/privacy', '/terms', BASE_ROUTE]);
+    assert.deepEqual(listed, ['/', '/how-it-works', '/about', '/contact', '/privacy', '/terms', BASE_ROUTE, GOLDMAKER_ROUTE]);
     for (const address of listed) {
       assert.ok(![...disallow].some((blocked) => address.startsWith(blocked)), `${address} is listed and blocked`);
     }
@@ -97,12 +132,26 @@ describe('the addresses', () => {
 });
 
 describe('who has gone in', () => {
-  it('says it in one plain sentence', () => {
-    assert.equal(describeCount({ entered: 0, closed: 0 }), 'Nobody has gone in yet.');
-    assert.equal(describeCount({ entered: 1, closed: 0 }), 'One detective has gone in. Nobody has closed the case.');
-    assert.equal(describeCount({ entered: 1, closed: 1 }), 'One detective has gone in. One has closed the case.');
-    assert.equal(describeCount({ entered: 412, closed: 37 }), '412 detectives have gone in. 37 have closed the case.');
-    assert.equal(describeCount({ entered: 12345, closed: 1 }), '12,345 detectives have gone in. One has closed the case.');
+  it('says it in one plain sentence, in the room’s own words', () => {
+    const file = ASHGROVE.tally;
+    assert.equal(describeCount({ entered: 0, closed: 0 }, file), 'Nobody has gone in yet.');
+    assert.equal(describeCount({ entered: 1, closed: 0 }, file), 'One detective has gone in. Nobody has closed the case.');
+    assert.equal(describeCount({ entered: 1, closed: 1 }, file), 'One detective has gone in. One has closed the case.');
+    assert.equal(describeCount({ entered: 412, closed: 37 }, file), '412 detectives have gone in. 37 have closed the case.');
+    assert.equal(describeCount({ entered: 12345, closed: 1 }, file), '12,345 detectives have gone in. One has closed the case.');
+
+    const cellar = GOLDMAKER.tally;
+    assert.equal(describeCount({ entered: 0, closed: 0 }, cellar), 'Nobody has been shut in yet.');
+    assert.equal(describeCount({ entered: 1, closed: 0 }, cellar), 'One assayer has been shut in. Nobody has got out.');
+    assert.equal(describeCount({ entered: 3, closed: 1 }, cellar), '3 assayers have been shut in. One has got out.');
+    assert.equal(describeCount({ entered: 2048, closed: 1024 }, cellar), '2,048 assayers have been shut in. 1,024 have got out.');
+  });
+
+  it('adds the rooms up for the board, and shows no total with a room missing from it', () => {
+    assert.deepEqual(addCounts([{ entered: 3, closed: 1 }, { entered: 0, closed: 0 }]), { entered: 3, closed: 1 });
+    assert.deepEqual(addCounts([{ entered: 3, closed: 1 }, { entered: 40, closed: 9 }]), { entered: 43, closed: 10 });
+    assert.equal(addCounts([{ entered: 3, closed: 1 }, null]), null);
+    assert.equal(addCounts([]), null);
   });
 });
 
@@ -148,7 +197,7 @@ describe('the photographs of the venue', () => {
     const { venuePhotos } = await import('../../lib/site/venue.generated');
     const sharp = (await import('sharp')).default;
 
-    assert.deepEqual(Object.keys(venuePhotos), ['reception', 'desk', 'notices', 'lockers', 'corridor', 'keys', 'key', 'door']);
+    assert.deepEqual(Object.keys(venuePhotos), ['reception', 'desk', 'notices', 'lockers', 'corridor', 'keys', 'key', 'key2', 'door', 'door2']);
     for (const [name, photo] of Object.entries(venuePhotos)) {
       const widths = photo.sources.map((source) => source.width);
       assert.deepEqual(widths, [...widths].sort((a, b) => a - b), `${name}: narrowest first`);
@@ -175,6 +224,47 @@ describe('the photographs of the venue', () => {
       assert.ok((sizes[0] ?? 0) < 80_000, `${name}: the narrowest file is ${sizes[0]} bytes`);
       assert.ok((sizes[sizes.length - 1] ?? 0) < 320_000, `${name}: the widest file is ${sizes[sizes.length - 1]} bytes`);
     }
+  });
+
+  it('show a key on its hook and a door standing open for every open room', async () => {
+    const { venuePhotos } = await import('../../lib/site/venue.generated');
+    for (const room of OPEN_ROOMS) {
+      const pictures = ROOMS_IN_THE_PICTURES[room.slug];
+      assert.ok(pictures, `${room.title} is open and is not in the photographs: see lib/site/venue.ts and docs/image-prompts.md`);
+      assert.ok(pictures.key in venuePhotos && pictures.door in venuePhotos, `${room.title}: its key or its door has not been processed. Run npm run venue.`);
+      assert.ok(pictures.doorAlt.includes(`Door ${room.number}`), `${room.title}: the description of its door should name door ${room.number}`);
+    }
+    assert.equal(Object.keys(ROOMS_IN_THE_PICTURES).length, OPEN_ROOMS.length, 'a room that is not open has a key and a door in the pictures');
+
+    // The photographs of the reception, the corridor and the key rack show
+    // two keys on their hooks and two doors open, and the home page describes
+    // them in words. When a door opens or is sealed, retake those three, cut
+    // a key for the new room, write the descriptions again, and change this.
+    assert.equal(OPEN_ROOMS.length, 2, 'the photographs show two open doors, and the catalogue no longer has two');
+    const home = readFileSync(path.join(root, 'app/(site)/page.tsx'), 'utf8');
+    assert.ok(home.includes('a key hangs on each of the first two hooks'), 'the home page no longer says what the reception’s key rack shows');
+    assert.ok(home.includes('The other three are shut and sealed with red wax'), 'the home page no longer says which doors of the corridor are sealed');
+  });
+
+  it('cut the keys from one picture, in the proportions the page sets them side by side in', async () => {
+    const { venuePhotos } = await import('../../lib/site/venue.generated');
+    const script = readFileSync(path.join(root, 'scripts/process-venue.mjs'), 'utf8');
+    const crop = (name: string) => {
+      const found = new RegExp(`name: '${name}', from: 'keys', crop: \\{ left: (\\d+), top: (\\d+), width: (\\d+), height: (\\d+) \\}`).exec(script);
+      assert.ok(found, `scripts/process-venue.mjs no longer cuts "${name}" from the key rack`);
+      const [left, top, width, height] = found.slice(1).map(Number) as [number, number, number, number];
+      return { left, top, width, height };
+    };
+    const first = crop('key');
+    const second = crop('key2');
+    // One piece of the picture, cut in two: the second starts where the first ends.
+    assert.equal(first.left + first.width, second.left);
+    assert.deepEqual([first.top, first.height], [second.top, second.height]);
+    // Side by side they are as tall as each other.
+    assert.ok(Math.abs(venuePhotos.key.height - venuePhotos.key2.height) <= 2);
+    // And the stylesheet gives each the share of the width it was cut with.
+    const css = readFileSync(path.join(root, 'app/(site)/site.css'), 'utf8');
+    assert.ok(css.includes(`grid-template-columns: ${first.width}fr ${second.width}fr;`), 'site.css sets the keys side by side in other proportions than they were cut in');
   });
 
   it('is what the link preview shows', () => {

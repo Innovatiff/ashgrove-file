@@ -1,4 +1,4 @@
-import { Fraunces, IM_Fell_English_SC, Instrument_Sans } from 'next/font/google';
+import { Fraunces, Grenze_Gotisch, IM_Fell_English_SC, Instrument_Sans } from 'next/font/google';
 
 /**
  * The main website's type. None of it is a room's: the rooms bring their own.
@@ -31,5 +31,14 @@ export const fell = IM_Fell_English_SC({
   preload: false,
 });
 
-/** The class names that put all three on <html>. */
-export const SITE_FONTS = `${fraunces.variable} ${instrument.variable} ${fell.variable}`;
+// The Gold-Maker's own title face. Used once, for that room's name on its plate.
+export const grenze = Grenze_Gotisch({
+  weight: '500',
+  subsets: ['latin'],
+  variable: '--font-grenze-plate',
+  display: 'swap',
+  preload: false,
+});
+
+/** The class names that put all of them on <html>. */
+export const SITE_FONTS = `${fraunces.variable} ${instrument.variable} ${fell.variable} ${grenze.variable}`;

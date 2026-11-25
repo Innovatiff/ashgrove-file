@@ -4,7 +4,7 @@ import { AnalyticsChoice } from '@/components/site/AnalyticsChoice';
 import { type Clause, Clauses } from '@/components/site/Clauses';
 import { PageHead } from '@/components/site/PageHead';
 import { LEGAL_UPDATED, SITE } from '@/lib/site/brand';
-import { ASHGROVE } from '@/lib/site/catalogue';
+import { ASHGROVE, GOLDMAKER } from '@/lib/site/catalogue';
 
 export const metadata: Metadata = {
   title: 'Privacy',
@@ -36,8 +36,8 @@ const CLAUSES: readonly Clause[] = [
           analytics.
         </p>
         <p>
-          The home page asks our database one anonymous question: how many people have gone into {ASHGROVE.title},
-          and how many have finished it.
+          The home page asks our database one anonymous question about each open room: how many people have gone
+          into it, and how many have finished it.
         </p>
       </>
     ),
@@ -52,15 +52,14 @@ const CLAUSES: readonly Clause[] = [
             <strong>An anonymous account is made for your browser.</strong> It is a random identifier with no name
             and no email address attached, issued by Firebase Authentication, a Google service. It is stored in your
             browser. It is how a room finds your file again, and every room uses the same one. {ASHGROVE.title} makes
-            it when you open its front page. A room that asks you to sign before it lets you in makes it when you
-            sign, and not before.
+            it when you open its front page. {GOLDMAKER.title} makes it when you sign its warrant, and not before.
           </li>
           <li>
             <strong>A file is kept under that identifier, one for each room you go into.</strong> It holds the name
             you choose to sign with and, in {ASHGROVE.title}, a badge number. It holds what you have solved, opened
-            and found in that room and when, the room’s own notes of what you tried, which hints you have taken, how
-            many tries you have made in the last minute, the accusations or reports you have made, and when and how
-            you finished.
+            and found in that room and when, the room’s own notes of what you tried, which hints you have taken, any
+            marks written against your name, how many tries you have made in the last minute, the accusations or
+            reports you have made, and when and how you finished.
           </li>
         </ul>
       </>

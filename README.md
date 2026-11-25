@@ -10,8 +10,7 @@ murder mystery. Players enter a sealed 1949 case archive, solve one code per
 room, and finally accuse the killer.
 
 **The Gold-Maker** is the second, File 002: an alchemist's cellar in Prague
-in 1593, searched by hand. It is live at its own address, and its door on
-the main website is still sealed (see [File 002](#file-002-the-gold-maker)).
+in 1593, searched by hand (see [File 002](#file-002-the-gold-maker)).
 
 ![The main website](docs/screenshots/site-home.jpg)
 
@@ -40,7 +39,7 @@ from there.
 | `/ashgrove/file/marsh` | Room VI, The Marsh. |
 | `/ashgrove/file/lamp` | Room VII, The Seventh Lamp. |
 | `/ashgrove/verdict` | The accusation. Five photographs, the detective's own evidence, three chances to name the killer, then the closing account and a rank. |
-| `/goldmaker` | **The Gold-Maker.** Its front page: what Prague says, what the Emperor says, how the room is played, and the warrant a visitor signs to be shut in. Not listed anywhere yet. |
+| `/goldmaker` | **The Gold-Maker.** Its front page: what Prague says, what the Emperor says, how the room is played, and the warrant a visitor signs to be shut in. |
 | `/goldmaker/cellar` | The room itself: the cellar, the door, and whatever a visitor opens from there. One page. |
 
 The room used to live at the root, before there was a main website. Its old
@@ -68,24 +67,28 @@ in, shown in photographs, and read in the order a visitor would walk it:
 1. **Reception.** A photograph from the front door, edge to edge. Laid over
    the foot of it: the headline, and a board of what is open today with the
    live count of who has gone in and solved it, and the lobby clock. Under the
-   board, a close picture of key 001 on its hook, which is a link to the room.
+   board, the keys on their hooks, close: one piece of the key rack cut
+   between the hooks, each half a link to its own room.
 2. **On the desk**, a photograph of the box on the reception desk, and under
    it a practice box that a visitor can really open (below).
 3. **The briefing**: the notice board, and how it works in four steps.
 4. **The lockers**: the lockers, and the four house rules as the four things
    a visitor can leave in them because no room will ask for them.
 5. **The corridor**: one wall of it, edge to edge, with its five doors; the
-   plate for each open room; the key rack, with the sealed rooms under wax.
-6. **The door**: Room 001, standing open.
+   plate for each open room, half of it in that room's own colours and
+   lettering; the key rack, with the sealed rooms under wax.
+6. **The doors**: each open room's door, standing open, and each a way in.
 
-**The photographs** are of a place that does not exist. There are seven. They
-were generated, the reception first and the other six with it as a reference,
+**The photographs** are of a place that does not exist. There are eight. They
+were generated, the reception first and the others with it as a reference,
 so that they are plainly the same building. How is written down in
 [`docs/image-prompts.md`](docs/image-prompts.md): the model, the prompts,
-which of each pair was kept and why. The eighth picture on the page, the key
-on its hook, is a part of the photograph of the key rack. The site's name is
-in the first of them, in brass letters on the wall, and the room numbers are
-in two more. Changing either means taking those pictures again.
+which of each pair was kept and why. The two other pictures on the page, the
+keys on their hooks, are parts of the photograph of the key rack. The site's
+name is in the first of them, in brass letters on the wall. The room numbers,
+the keys and the seals are in three: the reception, the corridor and the key
+rack show which doors are open, so those three are taken again whenever a
+door opens ([below](#opening-a-sealed-door)).
 
 A visitor is told the same. The About page has a section, "Where the building
 is", that says there is no address to visit and that the pictures were made
@@ -123,12 +126,17 @@ picture that link previews show (below).
 **The catalogue.** [`lib/site/catalogue.ts`](lib/site/catalogue.ts) lists the
 rooms in order. An open room has a title, a few public facts, a picture and
 the address of its own front page. A sealed room has a number and one line.
-To add a room:
+An open room also says what it costs (`free`: `always`, or `for now` when
+nothing is promised about later), where its two public counters are kept
+(`stats`) and how they are put into words (`tally`). The home page, How it
+works and the board read those, and a unit test fails if the site says more
+about a price than the room's own front page does.
 
-1. Build it under an address of its own, in its own route group with its own
-   root layout, the way `app/(ashgrove)` is. It brings its own typefaces and
-   stylesheet.
-2. Add one entry to `CATALOGUE`. Nothing else on the main website changes.
+To add a room, build it under an address of its own, in its own route group
+with its own root layout, the way `app/(ashgrove)` and `app/(goldmaker)` are.
+It brings its own typefaces and stylesheet. It can be live and unlisted for
+as long as you like. Listing it is a separate step:
+[Opening a sealed door](#opening-a-sealed-door).
 
 Only what a room's own front page already says in public belongs in the
 catalogue. Nothing from inside a room.
@@ -137,7 +145,10 @@ catalogue. Nothing from inside a room.
 [`app/(site)/site.css`](<app/(site)/site.css>). The photographs carry the
 warmth, and everything set around them is plain so that they can: no shadows,
 no blur, no gradients. The one mask is on a room's own photograph, the way
-the room shows it.
+the room shows it. The half of a plate that is the room's own world takes its
+colours and its title face from that room: `.plate__world--{slug}` in the
+stylesheet, and one face in [`lib/site/fonts.ts`](lib/site/fonts.ts) for the
+room's name and nothing else.
 
 | Token | Value | Use |
 | --- | --- | --- |
@@ -156,8 +167,10 @@ for a font.
 
 **What it loads.** Nothing of Firebase's. No page of the main website signs a
 visitor in, sets a cookie or stores anything in the browser. The home page
-asks Firestore's REST API one anonymous question, how many have entered and
-closed The Ashgrove File ([`lib/site/stats.ts`](lib/site/stats.ts)). Firebase
+asks Firestore's REST API one anonymous question about each open room, how
+many have gone in and how many have finished
+([`lib/site/stats.ts`](lib/site/stats.ts)). The board adds the rooms up, and
+shows dashes if any one of them cannot be read. Firebase
 is loaded only when someone presses Send on the contact form, and a visitor is
 not given an account until they walk into a room. Links between the main
 website and a room are plain `<a>` elements on purpose: the two have separate
@@ -248,12 +261,14 @@ in [`docs/screenshots`](docs/screenshots) (`goldmaker-phone.jpg`,
 `goldmaker-front.jpg`, `goldmaker-thing.jpg`). None of them shows a lock set
 or a thing tested.
 
-**It is live, and it is not listed.** While
-[`lib/goldmaker/listing.ts`](lib/goldmaker/listing.ts) says `LISTED = false`,
-the room can be played by anyone who has the address, but nothing points to
-it: the main website shows door 002 sealed, the room is not in the sitemap,
-and its pages ask search engines not to list them. Opening the door is a
-separate step, [below](#opening-a-sealed-door).
+**It is open.** It went live unlisted first:
+[`lib/goldmaker/listing.ts`](lib/goldmaker/listing.ts) said `LISTED = false`,
+the room could be played by anyone who had the address, and nothing pointed
+to it. Its door is now open on the main website: it is in the catalogue and
+the sitemap, its front page may be listed by search engines, and the
+photographs of the building show its key on its hook. The cellar itself is
+never listed, whatever the door says. What opening it took is written down
+[below](#opening-a-sealed-door), for the next room.
 
 ### Where it is
 
@@ -401,17 +416,38 @@ check on the whole room. The matching place on the page is
 
 ### Opening a sealed door
 
-When a room is ready to be listed:
+A room can be live for as long as you like with nothing pointing to it. When
+it is ready to be listed, this is the whole list. It is what opening door 002
+took.
 
-1. Set `LISTED = true` in its `listing.ts`. Its pages stop asking not to be
-   listed.
-2. Give it an entry in [`lib/site/catalogue.ts`](lib/site/catalogue.ts) and
-   take its number out of the sealed ones. Add its front page to
-   [`app/sitemap.ts`](app/sitemap.ts).
-3. Retake the three photographs of the venue that show its door sealed: the
-   corridor, the key rack and the reception (see "The photographs", above).
-4. Read How it works, About, Privacy and Terms again. They were written when
-   one room was open.
+1. **The switch.** Set `LISTED = true` in the room's `listing.ts`. Its front
+   page stops asking search engines not to list it. Keep the inside of the
+   room out of them for good: `robots` on its inner pages, and their
+   addresses in [`app/robots.ts`](app/robots.ts).
+2. **The catalogue.** Give it an entry in
+   [`lib/site/catalogue.ts`](lib/site/catalogue.ts) in place of its sealed
+   number: what it is, what it costs, where its counters are and how they
+   read. The sitemap, the board, the footer and the buttons on How it works,
+   About and the 404 page all follow.
+3. **Its plate.** Give the room's half of its plate its own colours in
+   [`app/(site)/site.css`](<app/(site)/site.css>) (`.plate__world--{slug}`)
+   and, if its name is set in a face of its own, load that one face in
+   [`lib/site/fonts.ts`](lib/site/fonts.ts).
+4. **The photographs.** The reception, the corridor and the key rack show
+   which doors are open, so take all three again with the old ones as
+   references, changing only the new room's key and door; photograph its door
+   standing open; cut its key from the key rack. Then say which key and door
+   are its own in [`lib/site/venue.ts`](lib/site/venue.ts), write the
+   descriptions of the three pictures on the home page again, and redraw the
+   link preview. [`docs/image-prompts.md`](docs/image-prompts.md) has the
+   prompts, and how the keys are cut.
+5. **The words.** Read How it works, About, Privacy and Terms again. They say
+   what the open rooms do, and a new room may do something none of them
+   says: a different way in, a different price for a wrong answer, a
+   different kind of help.
+6. **The tests.** `npm run test:unit` holds a count of the doors the
+   photographs show open. It fails until the pictures, their descriptions
+   and that count agree with the catalogue.
 
 ## Stack
 
@@ -583,7 +619,7 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | 146 tests. The Gold-Maker's engine on a made-up cellar, the real cellar as it is written, and its sealed half walked from the door to the report. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Every photograph of the venue is on disk at each width the page offers, and none is heavy. Nothing from `answers.json` is in a tracked file. |
+| `npm run test:unit` | 152 tests. The Gold-Maker's engine on a made-up cellar, the real cellar as it is written, and its sealed half walked from the door to the report. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Every photograph of the venue is on disk at each width the page offers, and none is heavy. Nothing from `answers.json` is in a tracked file. |
 | `npm run test:rules` | 49 tests with `@firebase/rules-unit-testing`: in File 002 the cellar is shown only to a visitor with a file, what it keeps to itself is never readable, and nobody can make or change their own file. In File 001: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. Nobody can read or write the contact inbox. |
 | `npm run test:functions` | 55 tests driving `checkAnswer`, `signOath`, `takeHint`, `accuse`, `sendMessage` and `goldmaker` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, a case that is counted once, and a contact form that tidies what it is sent, refuses what is wrong and stops at three messages a day. |
 | `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`, and nothing from the cellar of File 002, open half or sealed. |
@@ -941,7 +977,7 @@ components/
   site/                      the main website: Masthead, Colophon, PageHead,
                              Clauses, ContactForm, AnalyticsChoice, Arrow,
                              Seal, and the home page's own: Photo, TodayBoard,
-                             PracticeBox, RoomPlate, LiveCount
+                             PracticeBox, RoomPlate, RoomButtons, LiveCount
   goldmaker/                 File 002: CellarProvider, Cellar, Scene, ThingPanel,
                              Lock, Paper, Captain, Report, Ending, Warrant,
                              Sheet, Photo, Bird, Sign, RoomStrip, RoomFoot,
@@ -967,7 +1003,8 @@ lib/
                              catalogue (the rooms), stats (the public count),
                              practice (the box on the desk), contact (the
                              form's checks and its one call), fonts, fonts-404,
-                             venue.generated (the photographs and their sizes)
+                             venue.generated (the photographs and their sizes),
+                             venue (which key and door in them is each room's)
   goldmaker/                 File 002: api (its one callable), world (the
                              cellar as one visitor finds it), shape, fonts,
                              pictures, listing (is its door open)

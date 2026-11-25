@@ -8,7 +8,7 @@ import type { OpenRoom } from '@/lib/site/catalogue';
  * photograph, colours and lettering. The right half is this website saying
  * what it is, in its own voice. Both halves lead to the room's front page.
  */
-export function RoomPlate({ room }: { room: OpenRoom }) {
+export function RoomPlate({ room, first = false }: { room: OpenRoom; first?: boolean }) {
   // "The Ashgrove File": the middle word carries the room's colour, as it
   // does on the room's own cover.
   const words = room.title.split(' ');
@@ -16,10 +16,11 @@ export function RoomPlate({ room }: { room: OpenRoom }) {
   const titleId = `room-${room.slug}`;
 
   return (
-    <article className="plate" aria-labelledby={titleId}>
+    <article className="plate" aria-labelledby={titleId} data-testid={`plate-${room.slug}`}>
       {/* Plain anchors into the room: it has a layout of its own, so this is
-          a full page load, and nothing of the room is fetched before it. */}
-      <a href={room.href} className="plate__world" aria-hidden="true" tabIndex={-1}>
+          a full page load, and nothing of the room is fetched before it.
+          The room's own colours and lettering are in site.css, under its name. */}
+      <a href={room.href} className={`plate__world plate__world--${room.slug}`} aria-hidden="true" tabIndex={-1}>
         <Image
           src={room.image.src}
           width={room.image.width}
@@ -27,7 +28,8 @@ export function RoomPlate({ room }: { room: OpenRoom }) {
           alt=""
           className="plate__image"
           sizes="(min-width: 60rem) 55vw, 100vw"
-          priority
+          priority={first}
+          loading={first ? undefined : 'lazy'}
         />
         <span className="plate__tag">File {room.number}</span>
         <span className="plate__title">
@@ -63,7 +65,7 @@ export function RoomPlate({ room }: { room: OpenRoom }) {
         </dl>
 
         <div className="mt-auto pt-8">
-          <LiveCount />
+          <LiveCount stats={room.stats} tally={room.tally} />
           <a href={room.href} className="btn mt-4" data-testid={`enter-${room.slug}`}>
             {room.enter}
             <span className="visually-hidden">: {room.title}</span>

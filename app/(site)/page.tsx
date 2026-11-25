@@ -8,6 +8,7 @@ import { TodayBoard } from '@/components/site/TodayBoard';
 import { SITE } from '@/lib/site/brand';
 import { ASHGROVE, OPEN_ROOMS, SEALED_ROOMS } from '@/lib/site/catalogue';
 import { CLOCK_FAST_MINUTES, LET_OUT_BY_THE_CLOCK } from '@/lib/site/practice';
+import { ROOMS_IN_THE_PICTURES } from '@/lib/site/venue';
 
 // The home page is a walk through a place, in the order a visitor would walk
 // it: in at reception, to the desk and the box that sits on it, past the
@@ -16,6 +17,12 @@ import { CLOCK_FAST_MINUTES, LET_OUT_BY_THE_CLOCK } from '@/lib/site/practice';
 //
 // Everything said here about a room is something the room's own front page
 // already says in public.
+//
+// The photographs show two keys on their hooks and two doors standing open.
+// The words that describe them are written out below and are true of those
+// pictures only: when a third room opens the reception, the corridor and the
+// key rack are retaken, and their descriptions here are written again
+// (docs/image-prompts.md). Everything else on the page follows the catalogue.
 
 const BRIEFING = [
   {
@@ -62,6 +69,13 @@ const LOCKERS = [
 
 const RECEPTION_SIZES = '100vw';
 
+const COUNT = ['No', 'One', 'Two', 'Three', 'Four', 'Five'] as const;
+/** "One door is open." "Two doors are open." */
+const doorsOpen = (n: number) => (n === 1 ? 'One door is open.' : `${COUNT[n] ?? n} doors are open.`);
+/** "001", "001 and 002", "001, 002 and 003". */
+const listed = (items: readonly string[]) =>
+  items.length < 2 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+
 export default function HomePage() {
   // The reception is the first thing on the page and the largest. Ask for it
   // before the browser has read as far as the picture itself.
@@ -73,6 +87,11 @@ export default function HomePage() {
   });
 
   const sealed = SEALED_ROOMS.map((room) => room.number);
+  // An open room that is in the photographs: its key and its door.
+  const pictured = OPEN_ROOMS.flatMap((room) => {
+    const pictures = ROOMS_IN_THE_PICTURES[room.slug];
+    return pictures ? [{ room, pictures }] : [];
+  });
 
   return (
     <>
@@ -83,7 +102,7 @@ export default function HomePage() {
             name="reception"
             sizes={RECEPTION_SIZES}
             priority
-            alt={`The reception of ${SITE.name}, seen from the front door. A dark oak desk with a brass bell, an open ledger, a lamp with a red glass shade and a small locked box. On the wall behind it, brass letters spell ${SITE.name.toUpperCase()} between a round wall clock and a rack of keys: one key hangs on the first hook, and a sealed envelope on each of the other four. To the right, a red rope hangs across a corridor of doors, under a sign that reads ROOMS.`}
+            alt={`The reception of ${SITE.name}, seen from the front door. A dark oak desk with a brass bell, an open ledger, a lamp with a red glass shade and a small locked box. On the wall behind it, brass letters spell ${SITE.name.toUpperCase()} between a round wall clock and a rack of keys: a key hangs on each of the first two hooks, and a sealed envelope on each of the other three. To the right, a red rope hangs across a corridor of doors, under a sign that reads ROOMS.`}
           />
         </figure>
 
@@ -102,16 +121,23 @@ export default function HomePage() {
               <li className="keytag">Played in your browser</li>
               <li className="keytag">Nothing to install</li>
               <li className="keytag">No account</li>
-              <li className="keytag">File {ASHGROVE.number} is free</li>
+              {/* What each room costs, and no more than the room itself says. */}
+              {OPEN_ROOMS.map((room) => (
+                <li key={room.slug} className="keytag" data-testid={`price-${room.slug}`}>
+                  File {room.number} is free{room.free === 'for now' ? ' for now' : ''}
+                </li>
+              ))}
             </ul>
 
             <div className="entrance__actions flex flex-wrap gap-3">
-              {/* A plain anchor: the room has a layout of its own, so this is a full page load. */}
-              <a href={ASHGROVE.href} className="btn" data-testid="hero-enter">
-                Take key {ASHGROVE.number}
-                <span className="visually-hidden">: {ASHGROVE.title}</span>
-                <Arrow />
-              </a>
+              {/* Plain anchors: a room has a layout of its own, so this is a full page load. */}
+              {OPEN_ROOMS.map((room, index) => (
+                <a key={room.slug} href={room.href} className="btn" data-testid={index === 0 ? 'hero-enter' : `hero-enter-${room.slug}`}>
+                  Take key {room.number}
+                  <span className="visually-hidden">: {room.title}</span>
+                  <Arrow />
+                </a>
+              ))}
               <a href="#desk" className="btn btn--ghost">
                 Look around first
               </a>
@@ -121,18 +147,29 @@ export default function HomePage() {
           <div className="entrance__side">
             <TodayBoard open={OPEN_ROOMS} sealed={SEALED_ROOMS} />
 
-            {/* The key itself. The words beside it say what it is, so the
-                picture needs no description of its own. */}
-            <a href={ASHGROVE.href} className="keyshot" data-testid="key-ashgrove">
-              <Photo name="key" sizes="(min-width: 64rem) 36vw, 100vw" alt="" />
-              <span className="keyshot__note">
-                <span>
-                  Key {ASHGROVE.number} is on its hook. Take it
-                  <span className="visually-hidden">: {ASHGROVE.title}</span>
-                </span>
-                <Arrow />
-              </span>
-            </a>
+            {/* The keys themselves: one piece of the key rack, cut between
+                the hooks, so that each key is the way into its own room. The
+                words under each say what it is, so the pictures need no
+                description of their own. */}
+            <div className="keyshots" role="group" aria-label="The keys on their hooks">
+              {pictured.map(({ room, pictures }) => (
+                // The words under a key are short, because the first piece is
+                // narrow. Its name in full is what a screen reader is given.
+                <a
+                  key={room.slug}
+                  href={room.href}
+                  className="keyshot"
+                  aria-label={`Take key ${room.number}: ${room.title}`}
+                  data-testid={`key-${room.slug}`}
+                >
+                  <Photo name={pictures.key} sizes={pictures.keySizes} alt="" />
+                  <span className="keyshot__note">
+                    <span>Key {room.number}</span>
+                    <Arrow />
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -146,8 +183,8 @@ export default function HomePage() {
               A box nobody has opened today.
             </h2>
             <p className="mt-5 text-ink-2">
-              Every room here works the way this box does. The answer is in front of you, and one thing in the room is
-              not telling you the truth.
+              Every room here asks what this box asks. The answer is in front of you, and one thing in the room is not
+              telling you the truth.
             </p>
             <p className="mt-3 text-ink-2">Try it. It takes a minute, and it is the whole idea.</p>
           </div>
@@ -194,7 +231,12 @@ export default function HomePage() {
             </ol>
 
             <div className="mt-10">
-              <PracticeBox href={ASHGROVE.href} enter={`Take key ${ASHGROVE.number}`} />
+              {/* With one room open the card in the box points at its door. With more, at the corridor. */}
+              {OPEN_ROOMS.length === 1 ? (
+                <PracticeBox href={ASHGROVE.href} enter={`Take key ${ASHGROVE.number}`} />
+              ) : (
+                <PracticeBox href="#rooms" enter="Choose a door" />
+              )}
             </div>
           </div>
         </div>
@@ -279,7 +321,8 @@ export default function HomePage() {
           <div className="md:col-span-7">
             <p className="label">The corridor</p>
             <h2 id="rooms-title" className="display display--2 mt-5">
-              One door is open. The rest are under wax.
+              {doorsOpen(OPEN_ROOMS.length)}
+              {sealed.length > 0 ? ' The rest are under wax.' : ''}
             </h2>
           </div>
           <p className="quiet md:col-span-5">
@@ -292,14 +335,14 @@ export default function HomePage() {
           <Photo
             name="corridor"
             sizes="100vw"
-            alt="One wall of the corridor, with five doors side by side and no two alike, each under a brass plate numbered from 001 to 005. Door 001, a plain cream door, stands open, and warm light spills from it across the chequered floor. The other four are shut and sealed with red wax: an arched door of oak planks, a round steel vault door, a pair of double doors under a pediment, and a door only knee high."
+            alt="One wall of the corridor, with five doors side by side and no two alike, each under a brass plate numbered from 001 to 005. Door 001, a plain cream door, stands open, and warm lamplight spills from it across the chequered floor. Door 002, an arched door of oak planks on iron hinges, stands open beside it, with a fire burning inside against a rough stone wall. The other three are shut and sealed with red wax: a round steel vault door, a pair of double doors under a pediment, and a door only knee high."
           />
         </figure>
 
         <div className="wrap">
           <div className="mt-10 grid gap-6 md:mt-14">
-            {OPEN_ROOMS.map((room) => (
-              <RoomPlate key={room.slug} room={room} />
+            {OPEN_ROOMS.map((room, index) => (
+              <RoomPlate key={room.slug} room={room} first={index === 0} />
             ))}
           </div>
 
@@ -309,14 +352,20 @@ export default function HomePage() {
                 name="keys"
                 sizes="(min-width: 64rem) 56vw, 100vw"
                 className="photo"
-                alt="The key rack: five brass hooks under plates numbered 001 to 005. A brass key hangs from the first, with a paper tag stamped OPEN in red. From each of the other four hangs an envelope sealed with red wax."
+                alt="The key rack: five brass hooks under plates numbered 001 to 005. A brass key hangs from the first and a darker iron key from the second, each with a paper tag stamped OPEN in red. From each of the other three hangs an envelope sealed with red wax."
               />
               <figcaption className="photo__note">The key rack, behind the desk.</figcaption>
             </figure>
 
             <div className="lg:col-span-5">
-              <p className="label">Hooks {sealed.length > 1 ? `${sealed[0]} to ${sealed[sealed.length - 1]}` : sealed[0]}</p>
-              <p className="display display--3 mt-4">Under wax until they are finished.</p>
+              {sealed.length > 0 ? (
+                <>
+                  <p className="label">
+                    {sealed.length > 1 ? `Hooks ${sealed[0]} to ${sealed[sealed.length - 1]}` : `Hook ${sealed[0]}`}
+                  </p>
+                  <p className="display display--3 mt-4">Under wax until they are finished.</p>
+                </>
+              ) : null}
 
               <p className="stamp mt-10">A dare</p>
               <p className="display display--3 mt-5">
@@ -335,36 +384,39 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ------------------------------------------------------- the door -- */}
+      {/* ------------------------------------------------------ the doors -- */}
       <section className="band" aria-labelledby="close-title">
-        <div className="wrap grid items-center gap-x-14 gap-y-10 lg:grid-cols-12">
-          <div className="lg:col-span-7">
+        <div className="wrap grid items-center gap-x-12 gap-y-10 lg:grid-cols-12">
+          <div className="lg:col-span-4">
             <p className="label">
-              File {ASHGROVE.number} · {ASHGROVE.title}
+              {OPEN_ROOMS.length === 1 ? 'File' : 'Files'} {listed(OPEN_ROOMS.map((room) => room.number))}
             </p>
             <h2 id="close-title" className="display display--2 mt-5">
-              The first door is open. Solve the <em>mystery.</em>
+              {doorsOpen(OPEN_ROOMS.length)} Solve the <em>mystery.</em>
             </h2>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <a href={ASHGROVE.href} className="btn">
-                {ASHGROVE.enter}
-                <Arrow />
-              </a>
+            <p className="mt-6 text-ink-2">Each is a different kind of room. Take the one you like the look of.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/contact" className="btn btn--ghost">
                 Write to us
               </Link>
             </div>
           </div>
 
-          <figure className="lg:col-span-5">
-            <Photo
-              name="door"
-              sizes="(min-width: 64rem) 40vw, 100vw"
-              className="photo"
-              alt="Door 001, a cream panelled door in a dark oak frame, standing a little open. Warm orange light comes through the gap and falls across the chequered floor of the corridor. A key with a paper tag hangs in the lock, and a wall lamp is lit beside the door."
-            />
-            <figcaption className="photo__note">Room 001.</figcaption>
-          </figure>
+          {/* Each door is the way into its room. The words under it say which. */}
+          <div className="doors lg:col-span-8">
+            {pictured.map(({ room, pictures }) => (
+              <a key={room.slug} href={room.href} className="doorway" data-testid={`door-${room.slug}`}>
+                <Photo name={pictures.door} sizes="(min-width: 64rem) 30vw, 50vw" alt={pictures.doorAlt} />
+                <span className="doorway__note">
+                  <span>
+                    <span className="doorway__n">Room {room.number}</span>
+                    {room.title}
+                  </span>
+                  <Arrow />
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
       </section>
     </>

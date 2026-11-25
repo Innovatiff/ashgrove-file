@@ -7,6 +7,8 @@ import { Cellar } from '@/components/goldmaker/Cellar';
 
 export const metadata: Metadata = {
   title: 'The cellar',
+  // The inside of a room is not for search engines, whether or not its door is listed.
+  robots: { index: false, follow: false },
 };
 
 export default function CellarPage() {

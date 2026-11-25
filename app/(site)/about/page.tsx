@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Arrow } from '@/components/site/Arrow';
 import { type Clause, Clauses } from '@/components/site/Clauses';
 import { PageHead } from '@/components/site/PageHead';
+import { RoomButtons } from '@/components/site/RoomButtons';
 import { SITE } from '@/lib/site/brand';
-import { ASHGROVE } from '@/lib/site/catalogue';
+import { ASHGROVE, GOLDMAKER, OPEN_ROOMS } from '@/lib/site/catalogue';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -84,7 +84,12 @@ const SECTIONS: readonly Clause[] = [
           File {ASHGROVE.number}, <a href={ASHGROVE.href}>{ASHGROVE.title}</a>, is open. It is a murder mystery
           set in England in 1949: seven rooms, one code for each, and at the end you name the killer.
         </p>
-        <p>The next rooms are being made. They will not look like it.</p>
+        <p>
+          File {GOLDMAKER.number}, <a href={GOLDMAKER.href}>{GOLDMAKER.title}</a>, is open. It is one locked cellar
+          in Prague in 1593, searched by hand. Nothing is typed, and you are let out when you can tell the Emperor
+          three things and show how you know each one.
+        </p>
+        <p>The next rooms are being made. They will not look like either.</p>
       </>
     ),
   },
@@ -121,18 +126,13 @@ export default function AboutPage() {
       <section className="band band--ink" aria-labelledby="about-start">
         <div className="wrap grid items-end gap-x-12 gap-y-8 md:grid-cols-12">
           <div className="md:col-span-8">
-            <p className="label">
-              File {ASHGROVE.number} · {ASHGROVE.title}
-            </p>
+            <p className="label">{OPEN_ROOMS.map((room) => `${room.number} · ${room.title}`).join('  /  ')}</p>
             <h2 id="about-start" className="display display--2 mt-5">
-              Start with the one that is open.
+              {OPEN_ROOMS.length === 1 ? 'Start with the one that is open.' : 'Start with whichever you like the look of.'}
             </h2>
           </div>
           <div className="flex flex-wrap gap-3 md:col-span-4 md:justify-end">
-            <a href={ASHGROVE.href} className="btn btn--bone">
-              {ASHGROVE.enter}
-              <Arrow />
-            </a>
+            <RoomButtons className="btn btn--bone" />
           </div>
         </div>
       </section>

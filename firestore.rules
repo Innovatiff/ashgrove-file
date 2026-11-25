@@ -1,6 +1,6 @@
 rules_version = '2';
 
-// The Ashgrove File.
+// The Ashgrove File and The Gold-Maker.
 //
 // Clients may read. Clients may never write. Every write in this database is
 // made by a Cloud Function through the Admin SDK, which bypasses these rules.
@@ -101,6 +101,40 @@ service cloud.firestore {
     match /stats/{statId} {
       allow read: if true;
       allow write: if false;
+    }
+
+    // FILE 002, THE GOLD-MAKER. Everything that room keeps is under
+    // games/goldmaker, apart from its public count in stats/goldmaker.
+
+    // True once the requester has a file in that room. Only the room's
+    // function can make one, so this is also where a price would be kept.
+    function shutIn(game) {
+      return signedIn() && exists(/databases/$(database)/documents/games/$(game)/players/$(request.auth.uid));
+    }
+
+    // A visitor's file: what they carry, what they have found, what is
+    // marked against them. Readable only by its owner, one document at a
+    // time. Never writable by a client.
+    match /games/{game}/players/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    // What is in the room when a visitor walks in. Readable only by a
+    // visitor who has been shut in.
+    match /games/{game}/content/{part} {
+      allow get: if shutIn(game);
+      allow list: if false;
+      allow write: if false;
+    }
+
+    // What happens when a tool is tried on a thing, the lock settings, the
+    // hints and the closing account. No client access at all. A visitor is
+    // given a piece of it only by the function, as the consequence of
+    // something they did, and it arrives in their own file.
+    match /games/{game}/secrets/{document=**} {
+      allow read, write: if false;
     }
 
     // The contact form's inbox, and the counters that limit it. Written by

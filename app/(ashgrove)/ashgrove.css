@@ -5,8 +5,10 @@
 @source './';
 @source '../../components';
 @source not '../../components/site';
+@source not '../../components/goldmaker';
 @source '../../lib';
 @source not '../../lib/site';
+@source not '../../lib/goldmaker';
 
 /* ==========================================================================
    THE ASHGROVE FILE

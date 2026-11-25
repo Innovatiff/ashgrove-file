@@ -1,5 +1,5 @@
 /**
- * Seeds Firestore for The Ashgrove File.
+ * Seeds Firestore for both rooms: The Ashgrove File and The Gold-Maker.
  *
  *   npm run seed:emulator        writes to the Firestore emulator (127.0.0.1:8080)
  *   npm run seed:prod            writes to the live project, after asking
@@ -19,7 +19,16 @@
  *   stats/global       { entered: 0, closed: 0 }, created only if missing.
  *                      Seeding never resets the live counters.
  *
- * It never writes players/ or badges/, and never deletes anything.
+ * And for File 002, The Gold-Maker
+ *   games/goldmaker/content/cellar   What is in the cellar when a visitor
+ *                      walks in. Source: scripts/content/goldmaker.ts.
+ *   games/goldmaker/secrets/engine   What happens when a tool is tried on a
+ *                      thing, the hashes of the two lock settings and of the
+ *                      report, the hints and the closing account.
+ *                      Source: the "goldmaker" entry of answers.json.
+ *   stats/goldmaker    { entered: 0, closed: 0 }, created only if missing.
+ *
+ * It never writes a player's file or a badge, and never deletes anything.
  *
  * Options
  *   --project <id>     Firebase project. Default: .firebaserc, then GCLOUD_PROJECT.
@@ -41,7 +50,10 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { clearedEvidenceId, isRoomId, ROOM_ORDER, roomNumeral, THRESHOLD, VERDICT } from '../functions/src/config/game';
 import { hashAnswer } from '../functions/src/lib/answers';
+import { GAME } from '../functions/src/goldmaker/shape';
 import { readAnswers } from './content/answers';
+import { CELLAR } from './content/goldmaker';
+import { GOLDMAKER_KEY, readGoldmaker } from './content/goldmaker-secrets';
 import { ROOMS, VERDICT_DOSSIER } from './content/rooms';
 import type { ImageTreatment, RoomContent, Suspect, VerdictContent, Witness } from './content/types';
 
@@ -220,6 +232,15 @@ async function main(): Promise<void> {
     problems.push('verdict: the answers file names someone, but not every room is open yet.');
   }
 
+  // ---------------------------------------------------------- the gold-maker ---
+
+  // The second room. Its two halves are read together, and the way through
+  // it that the answers file gives is walked from the door to the report.
+  const cellarSizesPath = path.join(root, 'scripts', 'content', 'cellar-images.generated.json');
+  const cellarSizes = existsSync(cellarSizesPath) ? JSON.parse(await readFile(cellarSizesPath, 'utf8')) : {};
+  const goldmaker = readGoldmaker(CELLAR, (rawAnswers as Record<string, unknown>)[GOLDMAKER_KEY], cellarSizes);
+  for (const problem of goldmaker.problems) problems.push(`The Gold-Maker: ${problem}`);
+
   if (problems.length > 0) fail(problems.map((p) => `  - ${p}`).join('\n'));
 
   // -------------------------------------------------------------------- plan ---
@@ -233,6 +254,12 @@ async function main(): Promise<void> {
   console.log(`  verdict   ${dossier ? `catalogued, ${dossier.suspects.length} on the wall` : 'not yet: a room is still sealed'}`);
   console.log(`  evidence  ${evidenceCount} card(s)`);
   console.log(`  rooms     ${[...rooms.values()].map((r) => `${r.id} (${r.status})`).join(', ')}`);
+  console.log(`\nTHE GOLD-MAKER / SEED`);
+  console.log(`  cellar    ${goldmaker.content.views.length} views, ${goldmaker.content.things.length} things, ${goldmaker.content.papers.length} papers`);
+  console.log(
+    `  sealed    ${goldmaker.secrets.reactions.length} reactions, ${goldmaker.secrets.locks.length} locks, ${goldmaker.secrets.hints.length} hint topics   (lock settings are stored as hashes)`,
+  );
+  console.log(`  walk      ${goldmaker.walkthrough.length} steps from the door to the report, case closed, nothing marked`);
 
   if (dryRun) {
     console.log('\nDry run. Everything is valid. Nothing was written.\n');
@@ -257,7 +284,7 @@ async function main(): Promise<void> {
     if (!has('--yes')) {
       const prompt = createInterface({ input: process.stdin, output: process.stdout });
       const typed = await prompt.question(
-        `\nThis overwrites answers/, evidence/ and rooms/ in the LIVE project.\nType the project id (${projectId}) to continue: `,
+        `\nThis overwrites answers/, evidence/, rooms/ and games/${GAME}/ in the LIVE project.\nType the project id (${projectId}) to continue: `,
       );
       prompt.close();
       if (typed.trim() !== projectId) fail('Project id did not match. Nothing was written.');
@@ -313,16 +340,26 @@ async function main(): Promise<void> {
     batch.set(db.collection('rooms').doc(VERDICT), { ...dossier, updatedAt: stamp });
   }
 
+  // The Gold-Maker: what is in the cellar, and what the cellar keeps to itself.
+  batch.set(db.doc(`games/${GAME}/content/cellar`), { ...goldmaker.content, updatedAt: stamp });
+  batch.set(db.doc(`games/${GAME}/secrets/engine`), { ...goldmaker.secrets, updatedAt: stamp });
+
   try {
     await batch.commit();
 
-    const statsRef = db.collection('stats').doc('global');
-    const stats = await statsRef.get();
-    if (stats.exists) {
-      console.log(`  stats     kept as they are (entered ${stats.get('entered') ?? 0}, closed ${stats.get('closed') ?? 0})`);
-    } else {
-      await statsRef.set({ entered: 0, closed: 0 });
-      console.log('  stats     created at zero');
+    for (const [name, id] of [
+      ['stats', 'global'],
+      ['stats', GAME],
+    ] as const) {
+      const statsRef = db.collection(name).doc(id);
+      const stats = await statsRef.get();
+      const label = `${name}/${id}`.padEnd(15);
+      if (stats.exists) {
+        console.log(`  ${label} kept as they are (entered ${stats.get('entered') ?? 0}, closed ${stats.get('closed') ?? 0})`);
+      } else {
+        await statsRef.set({ entered: 0, closed: 0 });
+        console.log(`  ${label} created at zero`);
+      }
     }
   } catch (error) {
     fail(
@@ -333,7 +370,7 @@ async function main(): Promise<void> {
     );
   }
 
-  console.log('\nSeeded. The file is ready.\n');
+  console.log('\nSeeded. Both rooms are ready.\n');
 }
 
 main().catch((error: unknown) => fail(error instanceof Error ? error.message : String(error)));

@@ -506,3 +506,242 @@ photograph of the corridor. In the other the frame is painted cream.
 4. Run `npm run venue -- --only {name}`. For `keys`, also `--only key`.
 5. If it was the reception: `npm run build`, then `node scripts/make-og.mjs`.
 
+# The cellar: File 002's pictures
+
+The pictures in `/public/cellar` are of the place File 002, The Gold-Maker,
+happens in: an alchemist's cellar in Prague in 1593, and the way out of it.
+There is no such cellar. Like the others, they were generated with the
+Higgsfield MCP.
+
+**This section gives things away.** Half of these pictures are of what a
+visitor sees only after they have worked something out, and a prompt has to
+say what is in its picture. Nothing here says how any lock is set or what
+any test shows, and one word that is an answer in itself has been left out of
+one prompt. But if you mean to play the room, play it first.
+
+## Model and settings
+
+| | |
+| --- | --- |
+| Model | **GPT Image 2.6** (Higgsfield id `gpt_image_2_6`), as for everything else |
+| Resolution | `4k` (3840 px on the long edge for 21:9; 3504 px for 3:2; 2880 px for 1:1) |
+| Quality | `high` |
+| Variations | 2 of each, 1 kept |
+| Reference | The kept picture of the cellar, passed as `image_references` to every other picture taken inside it |
+| Final files | `scripts/process-cellar.mjs` (`npm run cellar`): WebP, quality 80, at two to four widths each |
+
+The whole cellar was made first, on its own, and is the picture a visitor
+stands in. Every close picture was then made with it as a reference and told
+it was the same cellar on the same night. That is what makes the bar in the
+close picture the bar on the bench, and the furnace door with its four birds
+the door in the wide view. The two pictures taken outside, and the four
+woodcuts, had no reference.
+
+**The crocodile** is not a picture of its own. It is cut from the cellar
+(`from` and `crop` in the script).
+
+## Selection rules
+
+1. **Whatever the room says is there is there.** Four rods, the fourth
+   stopped with black wax. A raven on the ash door. Seven jars tagged I to
+   VII, with quicksilver in II and nothing in V. Four birds over four dials,
+   in the order raven, swan, eagle, phoenix. Each was checked at full size.
+2. **Nothing in a picture can be read** except the numerals on the jars. The
+   order on the door, the notebook, the chart and the book are all written
+   on the page as text. The notebook was asked for in mirror writing so that
+   it could not be.
+3. **No people.**
+4. **It is the same cellar.**
+
+All 48 renders passed, so each choice was between two good pictures.
+
+## What is in the pictures, and what follows from it
+
+- **Where things are.** Every thing a visitor can look at has a place in the
+  picture it is in, written as percentages in
+  `scripts/content/goldmaker.ts` (and, for things that are found later, in
+  the sealed answers). If `cellar`, `door`, `jars`, `furnace-open`,
+  `water` or `lane` is retaken, those places have to be measured again.
+- **The jars.** The picture shows which jar is which number, that II runs and
+  that V is empty. It does not show which metal is in which of the other
+  five: they were asked for alike.
+- **The birds.** Their order on the furnace door is in the picture, and so is
+  the fact that there are four rings on the cupboard.
+
+## The prompts
+
+Each prompt below was followed by one of three endings.
+
+For a picture taken inside the cellar:
+
+> Photograph of a real place, the same cellar and the same night as the reference photograph: rough sandstone walls, old brick vault, worn flagstones, heavy dark oak, iron and brass. Lit by candlelight, warm, with soft natural shadows, true-to-life colour, fine detail, dust and wear on every surface. No people, no hands. No watermark, no logo, no text other than what is described.
+
+For the two taken outside it:
+
+> Photograph of a real place: full-frame camera on a tripod, 28mm lens, f/8, natural perspective. Cold dawn light, soft natural shadows, true-to-life colour, fine detail, wear on every surface. No people. No watermark, no logo, no text.
+
+For the four woodcuts:
+
+> Bold carved outlines and hatched shading, the slightly uneven inking of an old hand-pulled print, small flaws in the paper. Square composition, the roundel centred with a margin of blank paper around it. No letters, no numbers, no text, no watermark.
+
+The cellar itself ended with the lens it was taken on, in place of the
+reference to itself:
+
+> Photograph of a real place, as for a museum's record: full-frame camera on a tripod, 24mm lens, f/8, long exposure, natural perspective, straight verticals. Warm candlelight, soft natural shadows, true-to-life colour, fine detail, dust and wear on every surface. No people. No watermark, no logo, no text.
+
+### `cellar` (21:9)
+
+> Wide interior photograph of a sixteenth-century alchemist's laboratory in a vaulted stone cellar in Prague, seen from just inside its door, looking down the length of the room. Rough sandstone block walls, a low barrel vault of old brick, a worn flagstone floor. Against the far wall stand two furnaces: on the left a small tower furnace of brick and clay, waist high, with a faint orange glow behind its little iron fire door; on the right a great brick furnace with a tall arched cast-iron door, cold, its brickwork pale and clean with no soot. Between the two furnaces a large leather bellows on a wooden frame and an iron scuttle heaped with charcoal. Along the right-hand wall runs a long heavy oak workbench: on it a brass balance in a glass-fronted wooden case, a single bar of gold lying on a folded dark red cloth, a lit candle in a brass candlestick, a stack of paper, glass flasks; a row of five iron rods and several iron tongs hang in a wooden rack on the wall above the bench. Along the left-hand wall: a tall oak lectern holding a large open book, a parchment chart pinned to the stone, a small oak wall cupboard with closed doors, a slope-fronted writing desk with a small walnut box on it, a round polished metal mirror hanging on the wall, shelves of glass alembics and retorts, and on the floor an open iron-bound strongbox, empty. A stuffed crocodile hangs from the vault on two chains. The room is lit only by the candle and the glow of the small furnace, with deep soft shadows.
+
+Kept: job `4164193c-14ad-4783-ae37-cefc78ebd7fa`. Not kept: `635bfeee-2c93-4ded-aa34-69814f1594e8`. One door at the left edge, four rods on the rack, and a great furnace of pale clean brick that plainly has never been lit. The other has five rods and door leaves at both edges.
+
+### `door` (3:2)
+
+> Photograph inside the same cellar as the reference image, looking back at its only door from the middle of the room. The door is shut: a heavy arched door of dark oak planks with long black iron strap hinges and a big iron ring handle, set in a round sandstone arch. At eye height in the door there is a small square hatch closed by a sliding iron shutter. A single sheet of paper is nailed to the door below the hatch, covered in close handwriting too small to read, with a round red wax seal at its foot. To the left of the door a black wool cloak hangs from an iron peg in the wall. On the flagstones at the foot of the door lie the two halves of a thick oak beam that has been chopped through with an axe, with pale splinters around them. To the right of the door a tin lantern with a lit candle stands in a small niche in the wall. 35mm lens, straight on.
+
+Kept: job `ca52a79a-4b2e-4181-8119-d1e094606882`. Not kept: `3b15192b-0d29-4e31-be7e-145a895d09a5`. The hatch, the order, the cloak, the cut beam and the lantern each stand clear of the others.
+
+### `bar` (3:2)
+
+> Close photograph of the gold bar from the reference image, on the same oak workbench: a single cast bar of gold, the length of a hand, lying on a folded dark red velvet cloth. Its surface is bright and smooth with softly rounded edges and no stamp or marking. Behind it, out of focus, the lit candle in its brass candlestick and the glass-fronted case of the balance. 50mm lens, shallow depth of field, seen from slightly above.
+
+Kept: job `0ed62eae-52ef-48b4-9687-66678728d33c`. Not kept: `a3508982-7961-4dff-bc24-c97b018bacc8`. Its surface has the faint creases the cut bar has.
+
+### `bar-cut` (3:2)
+
+> Close photograph of the gold bar from the reference image, on the same oak workbench, lying on the folded dark red velvet cloth. One corner of the bar has been filed away in a deep notch: the cut shows that the gold is only a skin as thin as a leaf, and that the metal underneath is dull, soft, grey [one word, naming the metal, is left out of this copy]. A small steel file lies on the cloth beside the bar, and a few bright curls of gold foil and grey filings lie around the notch. Behind it, out of focus, the lit candle in its brass candlestick. 50mm macro lens, shallow depth of field, seen from slightly above, the notch in sharp focus.
+
+Kept: job `bb9de5ca-f5fc-4d05-ab28-f4841fc3a197`. Not kept: `977f167b-4cab-4867-94f1-d77cf3c38dc9`. The gold reads as a torn skin, and the grey under it is plain.
+
+### `rods` (3:2)
+
+> Close photograph of the wooden rack on the wall above the workbench in the reference image: four long iron stirring rods hang from it in a row, each with a small iron ball at its top end. Three of the rods end at the bottom in plain blunt iron tips. The bottom tip of the fourth rod, the one at the right, is plugged with a stopper of shiny black wax, and there are grey finger-marks of ash on its shaft. Iron tongs hang further along the rack. Rough sandstone wall behind. 50mm lens, straight on, the four bottom tips of the rods in sharp focus.
+
+Kept: job `16aa5834-0a0e-4955-b72a-9079bb969532`. Not kept: `62454b0c-ad61-41bf-af95-0935cab0d092`. The black stopper on the fourth rod is easier to see.
+
+### `dust` (3:2)
+
+> Close photograph on the oak workbench from the reference image: an iron stirring rod lies on its side on the bench. Its end is a hollow tube, and soft melted black wax has run out of it and pooled on the wood. A small bright heap of fine gold dust has poured out of the hollow rod onto the bench beside the wax. The lit candle in its brass candlestick stands close behind. 50mm macro lens, shallow depth of field, the gold dust in sharp focus.
+
+Kept: job `d9ffdcc7-f8fe-4a39-b5e1-9b8cd7b35ad6`. Not kept: `1456b6eb-a2ea-4e51-b8cd-38ec2cb1cf18`. The rod runs out of the frame. In the other it has a ring for a handle, which the rods on the rack do not.
+
+### `ash-door` (3:2)
+
+> Close photograph of the foot of the small beehive furnace of brick and clay in the reference image. Low in its round brick base is a little square cast-iron ash door, hinged at one side, with a raven cast in relief on it. The ash door stands slightly ajar and shows a bed of pale grey ash inside. Its iron handle is worn bright and smeared with grey ash from a hand. At the top of the frame, the orange glow of the fire behind the furnace's iron grate. Flagstone floor. 50mm lens, low viewpoint.
+
+Kept: job `3a70abce-db86-4313-b0fd-83d2163c684e`. Not kept: `355590c1-4bca-411f-b6a2-97325f923729`. The raven is clearer, and the handle is bright with ash on it.
+
+### `key` (3:2)
+
+> Close photograph on the flagstone floor in front of the small beehive furnace in the reference image, by its open cast-iron ash door: a rough dark grey lodestone the size of a plum, tied round with a loop of thin cord, lies on the stone, and a small old iron key, black with soot and dusted with ash, clings to the lodestone by one end. Spilled pale grey ash on the flagstones around them. Warm orange glow from the furnace. 50mm macro lens, shallow depth of field, the key in sharp focus.
+
+Kept: job `8f93ad73-395d-4e4e-bba1-5f5a31807233`. Not kept: `64005c1e-1f86-41be-87c6-6569e6d17426`. The key is in sharper focus.
+
+### `box` (3:2)
+
+> Close photograph of the small walnut box that stands on the slope-fronted writing desk in the reference image: a plain dovetailed walnut box the size of a large book, with an iron lock plate and keyhole on its front. It is shut. On its lid are grey smudged finger-marks of ash. Beside it on the desk an inkwell with a quill pen. Rough sandstone wall behind. 50mm lens, shallow depth of field.
+
+Kept: job `5f255f60-21c7-4f2e-8f6b-ce6628c8756a`. Not kept: `67a4ac3c-754d-42a8-9613-fa57b188393e`. The finger-marks on the lid show better.
+
+### `box-open` (3:2)
+
+> Close photograph of the small walnut box that stands on the slope-fronted writing desk in the reference image, now with its lid open. Inside, on a lining of faded green cloth, lie a small pocket notebook bound in dark leather and a fine steel file whose teeth are clogged with yellow gold dust. A small sooty iron key stands in the lock on the front of the box. Rough sandstone wall behind. 50mm lens, seen from above and in front, shallow depth of field.
+
+Kept: job `ffb63e47-5daf-4a4a-892d-dcbd85d7ecaa`. Not kept: `0b50610b-0eb9-494a-a825-c5814b4c95c6`. Its notebook has the strap the notebook has in its own picture.
+
+### `notebook` (3:2)
+
+> Close photograph of a small pocket notebook bound in dark leather, lying open on the oak writing desk in the cellar from the reference image. Both pages are filled from edge to edge with dense, neat sixteenth-century handwriting in brown ink that runs backwards, in mirror writing, so that it cannot be read. No drawings and no diagrams, only lines of reversed handwriting. Candlelight from one side. 50mm macro lens, seen from directly above.
+
+Kept: job `d1edbe2c-58e6-4206-8ed3-467df4424b9f`. Not kept: `7a30d3b2-22a2-44cd-b379-5fd7d559cb8c`. The pages fill more of the frame.
+
+### `cupboard` (3:2)
+
+> Photograph of the small oak wall cupboard from the reference image, seen straight on, hanging on the rough sandstone wall. Its two plank doors are shut and held by a flat brass bar that runs across both doors. Four thick brass rings are threaded on the bar in a row, and each ring is banded with coloured enamel. Above each ring a tiny bird is engraved in the brass bar. Iron strap hinges at the sides of the cupboard. 50mm lens, straight on.
+
+Kept: job `76743e88-03a9-4847-be89-90a5629abfcb`. Not kept: `d6685e83-dc47-4532-851c-eafd8d5875c8`. The four birds over the rings are clearer.
+
+### `jars` (3:2)
+
+> Photograph of the small oak wall cupboard from the reference image, seen straight on, with both its doors standing wide open. Inside, on one shelf, seven squat clear glass jars stand in a single row. A small parchment tag hangs from the neck of each jar, and the tags are numbered in Roman numerals I, II, III, IV, V, VI and VII from left to right. Jar II holds a shallow pool of bright liquid quicksilver. Jar V is completely empty. Each of the other five jars, I, III, IV, VI and VII, holds one small dull dark grey metal bar the length of a finger, and the five bars look alike. 50mm lens, straight on, all seven jars and all seven tags in sharp focus.
+
+Kept: job `918bca76-4c74-4c61-98c5-a9eaabf4bae1`. Not kept: `fe7d32ef-1d27-4cbc-b100-dd0ee69afbf2`. The jars and their tags are larger.
+
+### `furnace` (3:2)
+
+> Photograph of the great brick furnace from the reference image, seen straight on from a few steps away: pale clean cream brick with no soot anywhere, and a tall arched pair of studded cast-iron doors, shut. Where the two iron leaves meet, at chest height, there is an iron lock plate with four small round brass dials in a row. Above each dial a small bird is cast in iron: from left to right a raven, a swan, an eagle and a phoenix rising from flames. The hearth stone in front of the doors is swept clean. 35mm lens, straight on, the lock plate in sharp focus.
+
+Kept: job `9ddcaf39-cbde-44ba-b25e-7aed1c7b4be9`. Not kept: `e35a92e3-d0dd-4156-af11-7fe0a750901e`. The four birds can each be told from the others.
+
+### `furnace-open` (3:2)
+
+> Photograph of the great brick furnace from the reference image, seen straight on from a few steps away, with its tall arched pair of studded cast-iron doors swung wide open. Inside there is no firebox, no grate, no ash and no soot: behind the doors a narrow passage of clean brick leads to a flight of worn stone steps going down out of sight. Faint cold bluish daylight comes up the steps from below, against the warm candlelight of the cellar. 35mm lens, straight on.
+
+Kept: job `090dfdc0-f6eb-46f6-b3ac-f34b8d2e2017`. Not kept: `67d2888a-f8a4-41ba-93bb-53d5677feef2`. The steps can be seen going down.
+
+### `water` (3:2)
+
+> Photograph at first light at the foot of a flight of worn stone steps under an old house in Prague in the sixteenth century: a low round sandstone arch opens straight onto a narrow mill-race of dark slow water. An iron mooring ring is set in the wall beside the arch, with a short frayed end of wet rope still tied to it. In the wet mud at the water's edge is the long fresh groove left by the keel of a small boat. One gold coin lies on the lowest step. Mist on the water, and beyond the mill-race the wide river, pale in the dawn. There is no boat.
+
+Kept: job `e9ef65cb-aa2e-4422-b39c-86b20464fd6b`. Not kept: `a51b3b23-5dc3-423a-b08f-eb0dfa4afb47`. The groove of the keel runs clearly down into the water.
+
+### `lane` (3:2)
+
+> Photograph at dawn in a steep narrow cobbled lane below the castle in Prague in the sixteenth century. In a sandstone wall, down three stone steps from the lane, is the outside of a cellar door: a heavy arched door of dark oak planks with long black iron strap hinges, shut, with a small square hatch at eye height. A soldier's halberd leans against the wall beside the door, and a tin lantern stands on the top step, still burning. Wet cobbles, pale sky, the first light on the roofs.
+
+Kept: job `944469f3-b291-41ea-98ef-e9f6c0768211`. Not kept: `0070a4b9-cbe7-42ca-9f3b-39ddd94f2758`. The door is larger and its hatch is plain. In the room this is the street door of the house. The door a visitor is shut behind is inside, at the foot of a stair.
+
+### `lodestones` (3:2)
+
+> Close photograph on one of the wooden shelves of glass vessels in the reference image: among the glass flasks and retorts stands a shallow turned wooden bowl holding half a dozen rough dark grey lodestones, each the size of a plum and each tied round with a loop of thin cord. A few iron nails cling to one of the stones. Beside the bowl a small round tin box stands open and empty, with a few yellow crumbs of brimstone in it. Rough sandstone wall behind. 50mm lens, shallow depth of field.
+
+Kept: job `2c3dd76f-334d-4259-9746-7ec9c47e1590`. Not kept: `90476892-b529-4003-b658-ac2fafd9eec9`. The empty tin is easier to read as empty.
+
+### `strongbox` (3:2)
+
+> Photograph of the iron-bound strongbox from the reference image, seen from above and in front, on the flagstone floor with its lid thrown back. It holds no coin at all: its shallow wooden trays show rows of round hollows where coins lay, every hollow empty. In the bottom of the box lies a scorched wooden mould for casting a metal bar, the length of a hand, with a spatter of dull grey metal on its lip, and beside it a thin ledger bound in parchment. 35mm lens.
+
+Kept: job `21a94598-7d83-41cd-b3c8-d7c464d96ff0`. Not kept: `9dac7d49-982f-46bb-8f85-bc0329e673c9`. The grey spatter on the mould is clearer.
+
+### `mirror` (3:2)
+
+> Close photograph of the round convex mirror in its brass frame that hangs on the rough sandstone wall in the reference image. In its bulging glass the whole candle-lit cellar is reflected small and curved: the vault, the two furnaces, the bench with its candle. The glass is old and slightly spotted. No person is reflected in it. 50mm lens, straight on.
+
+Kept: job `4b7bca56-4274-4555-ade4-c3e0c265bd4d`. Not kept: `7da7708f-fc21-497a-b09f-88c6326aeea5`. Brighter.
+
+### `raven` (1:1)
+
+> A sixteenth-century woodcut emblem, printed in black ink on cream laid paper. Inside a plain round border, a raven stands on a heap of ashes with its wings folded.
+
+Kept: job `14d68240-ee19-4c45-aab3-62502d217804`. Not kept: `c432fc25-2d6f-41a8-bded-9a925ccf0166`. Either would do.
+
+### `swan` (1:1)
+
+> A sixteenth-century woodcut emblem, printed in black ink on cream laid paper. Inside a plain round border, a swan swims on rippling water under a crescent moon.
+
+Kept: job `4ad49455-df5e-4ba0-9bee-2728bd380c1b`. Not kept: `e418757c-db97-4496-b614-402469190752`. Plainer sky.
+
+### `eagle` (1:1)
+
+> A sixteenth-century woodcut emblem, printed in black ink on cream laid paper. Inside a plain round border, an eagle with spread wings stands on a rock under a blazing sun.
+
+Kept: job `fb3b9bc8-3185-4ec5-bc00-3f1cbc7bd06d`. Not kept: `5ade4936-d644-44a3-9b3c-b2905b36e94e`. Plainer sun.
+
+### `phoenix` (1:1)
+
+> A sixteenth-century woodcut emblem, printed in black ink on cream laid paper. Inside a plain round border, a phoenix with spread wings rises from a nest of flames.
+
+Kept: job `0c79bf1a-53e6-491d-ac5d-3ea3f333f830`. Not kept: `4c2264ce-6722-41cd-9f94-33de30d24880`. The wings sit inside the border.
+
+## Retaking one
+
+Generate it again with the prompt above and, for a picture inside the cellar,
+the kept `cellar` job as its reference. Save the PNG as
+`.image-src/goldmaker/{name}.png` and run:
+
+```bash
+npm run cellar -- --only {name}
+```
+
+Then run the unit tests, which check that every picture the room names is on
+disk at every width.

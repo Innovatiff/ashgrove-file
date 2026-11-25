@@ -21,6 +21,7 @@
     "answers:check": "node scripts/seal-answers.mjs --check",
     "images": "node scripts/process-images.mjs",
     "venue": "node scripts/process-venue.mjs",
+    "cellar": "node scripts/process-cellar.mjs",
     "test": "npm run test:unit && npm run test:rules && npm run test:functions",
     "test:unit": "tsx --test --test-reporter=spec \"tests/unit/**/*.test.ts\"",
     "test:rules": "firebase emulators:exec --only firestore --project demo-ashgrove \"tsx --test --test-reporter=spec tests/rules/*.test.ts\"",

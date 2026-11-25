@@ -1,6 +1,6 @@
 # Unsealed, and The Ashgrove File
 
-Two things live in this repository.
+Three things live in this repository.
 
 **Unsealed** is the main website: the corridor that lists the escape rooms,
 with the pages around it (how it works, about, contact, privacy, terms).
@@ -8,6 +8,10 @@ with the pages around it (how it works, about, contact, privacy, terms).
 **The Ashgrove File** is the first escape room, File 001: a browser-based
 murder mystery. Players enter a sealed 1949 case archive, solve one code per
 room, and finally accuse the killer.
+
+**The Gold-Maker** is the second, File 002: an alchemist's cellar in Prague
+in 1593, searched by hand. It is live at its own address, and its door on
+the main website is still sealed (see [File 002](#file-002-the-gold-maker)).
 
 ![The main website](docs/screenshots/site-home.jpg)
 
@@ -36,6 +40,8 @@ from there.
 | `/ashgrove/file/marsh` | Room VI, The Marsh. |
 | `/ashgrove/file/lamp` | Room VII, The Seventh Lamp. |
 | `/ashgrove/verdict` | The accusation. Five photographs, the detective's own evidence, three chances to name the killer, then the closing account and a rank. |
+| `/goldmaker` | **The Gold-Maker.** Its front page: what Prague says, what the Emperor says, how the room is played, and the warrant a visitor signs to be shut in. Not listed anywhere yet. |
+| `/goldmaker/cellar` | The room itself: the cellar, the door, and whatever a visitor opens from there. One page. |
 
 The room used to live at the root, before there was a main website. Its old
 addresses (`/oath`, `/file/{room}`, `/verdict`) redirect to the new ones. Any
@@ -216,6 +222,185 @@ same commit and `LEGAL_UPDATED` in `lib/site/brand.ts` with it. They are plain
 words, not a lawyer's, and they do not name a legal entity, a postal address
 or a governing law.
 
+## File 002: The Gold-Maker
+
+Prague, 1593. The Emperor's gold-maker barred his cellar from the inside. By
+morning there was a bar of gold on the bench and nobody in the room. The
+visitor is the Emperor's Assay-Master, shut in the same cellar until they can
+say what the bar is, where the gold of his earlier shows came from and where
+the man has gone.
+
+It is not The Ashgrove File with the names changed, and that is the point of
+it. Nothing is typed. There is one room, shown in photographs. A visitor
+looks at a thing, tries a tool on it (their hands, a flame, a lodestone, the
+touchstone they carry) and is told what came of it. Two locks are set by
+turning rings. The room ends when the visitor is standing outside it and can
+tell the captain three things, each of which has to have been proved inside.
+
+Its look is its own too: verdigris and brass, vellum for anything that is
+read, a blackletter for titles and a Garamond for the rest. It shares no
+layout, typeface or stylesheet with the main website or with File 001.
+
+![The cellar of File 002](docs/screenshots/goldmaker-cellar.jpg)
+
+The same room on a phone, its front page and one thing looked at closely are
+in [`docs/screenshots`](docs/screenshots) (`goldmaker-phone.jpg`,
+`goldmaker-front.jpg`, `goldmaker-thing.jpg`). None of them shows a lock set
+or a thing tested.
+
+**It is live, and it is not listed.** While
+[`lib/goldmaker/listing.ts`](lib/goldmaker/listing.ts) says `LISTED = false`,
+the room can be played by anyone who has the address, but nothing points to
+it: the main website shows door 002 sealed, the room is not in the sitemap,
+and its pages ask search engines not to list them. Opening the door is a
+separate step, [below](#opening-a-sealed-door).
+
+### Where it is
+
+| | |
+| --- | --- |
+| [`app/(goldmaker)`](<app/(goldmaker)>) | Its root layout, its stylesheet (`goldmaker.css`), the front page and the cellar page. |
+| [`components/goldmaker`](components/goldmaker) | The scene and its marks, the panel for one thing, the ring lock, the papers, the captain, the report, the ending, the warrant. |
+| [`lib/goldmaker`](lib/goldmaker) | The calls to the function, the cellar as one visitor finds it (`world.ts`), fonts, pictures. |
+| [`functions/src/goldmaker`](functions/src/goldmaker) | `shape.ts` (ids, limits and every document shape), `engine.ts` (what happens), `handler.ts` (the one Cloud Function), `access.ts` (who may go in). |
+| [`scripts/content/goldmaker.ts`](scripts/content/goldmaker.ts) | What is in the cellar when a visitor walks in. |
+| [`scripts/content/goldmaker-secrets.ts`](scripts/content/goldmaker-secrets.ts) | Reads the sealed half, checks it against the open half, and walks the room. |
+| `public/cellar` | Its photographs and the four woodcut birds. |
+
+### Two halves
+
+Like File 001, the room is two halves kept apart on purpose.
+
+**What a visitor can see by walking in** is in
+[`scripts/content/goldmaker.ts`](scripts/content/goldmaker.ts): the two
+views, every thing in them with its place in the photograph, the chart of the
+seven metals, the old book, the two locks and what each ring can be turned
+to. The seed writes it to `games/goldmaker/content/cellar`. It is not in the
+bundle: a browser reads it from Firestore, and only once the visitor has a
+file.
+
+**What a visitor has to find out** is the `goldmaker` entry of `answers.json`,
+which is not in the repository. It holds what happens when each tool is tried
+on each thing, the settings of both locks, everything that is behind them
+(the open cupboard, the way out, the three questions), the hints, which
+answers are true and the closing account. The seed writes it to
+`games/goldmaker/secrets/engine`, with the lock settings and the true answers
+stored as hashes. No client can read that document.
+
+A visitor is given a piece of the sealed half only as the consequence of
+something they did, and it arrives in their own file: the function copies
+the key they found, the page they read or the view they opened into
+`games/goldmaker/players/{uid}`. The page then shows what is in the room at
+the start with what is in the file laid over it
+([`lib/goldmaker/world.ts`](lib/goldmaker/world.ts)).
+
+### The engine
+
+[`functions/src/goldmaker/engine.ts`](functions/src/goldmaker/engine.ts) is
+the whole of the room's logic, and touches nothing but the file it is handed,
+so the unit tests run it directly.
+
+- **Trying a tool on a thing** looks down a list of reactions for the first
+  whose tool and thing match and whose flags fit. It may set flags, and it
+  may give things: a tool, a paper, a place, or a thing that takes the place
+  of one that has changed. It may also take a tool away (`drop`), for a key
+  that stays in the lock it opened. If nothing fits, the tool's own plain
+  line is said and nothing is written down.
+- **A lock** is tried by sending the faces its rings are turned to. Ten
+  settings a minute, and a setting that does not open it costs one mark, so
+  the last ring of a lock cannot be had by turning it until it gives. The
+  lock says what a wrong setting costs before anything is tried.
+- **The captain** answers each thing three times, each plainer than the last,
+  for one, two and four marks. He can only be asked about what a visitor
+  could be stuck on at that moment.
+- **The report** is three questions. A part that has not been proved in the
+  cellar is sent back without a word about whether it is right, and costs
+  nothing. A part that is proved and wrong costs three marks.
+- **The rank** depends on the marks and on nothing else: none is Master of
+  the Mint, then Warden, Assayer, Journeyman, Apprentice.
+
+The list of places above the picture is a way back, not a map: a place past
+the first step out of the cellar is listed once the visitor has walked to
+it, so the list never says what is behind a door that has only just opened.
+
+All of it goes through one Cloud Function, `goldmaker({ op, … })`, so that a
+visitor who has tried one thing is not kept waiting for a second function to
+start before they can try the next.
+
+| Path | Read by clients | Written by |
+| --- | --- | --- |
+| `games/goldmaker/players/{uid}` | Its owner only, one document at a time | The function only |
+| `games/goldmaker/content/cellar` | A visitor who has a file | Seed script |
+| `games/goldmaker/secrets/engine` | Never | Seed script |
+| `stats/goldmaker` | Everyone | The function only |
+
+### The way through
+
+`answers.json` also holds the shortest honest way through the room, as a list
+of steps. The seed walks it with the real engine before it writes anything,
+and so do the unit tests: if that walk does not end with the case closed and
+nothing marked against it, the room cannot be solved as written, and the
+seed refuses. The same checks refuse a reaction that could never happen, a
+flag nothing sets, a lock with no setting, and a sealed line that has been
+repeated in the open half.
+
+Before it opened, the room was also played blind: by a tester who was given
+only what a visitor is given, through a text version of the cellar running
+the same engine, with no sight of this repository or of the answers. It was
+closed without a hint. What that play turned up was fixed before the room
+went live: a notebook that confessed more than it should, a lock whose last
+ring could be guessed for nothing, and a dozen places where the cellar's
+words disagreed with each other or with its pictures.
+
+### Changing the room
+
+To add a thing, give it an entry in `scripts/content/goldmaker.ts` with its
+place in the picture as percentages of the picture's width and height. To
+make something happen to it, add a reaction to the `goldmaker` entry of
+`answers.json`. A reaction that gives something must happen once: it sets a
+flag and names the same flag under `unless`. A plain reaction for the same
+tool and thing goes last, because the first that fits is used.
+
+Then seal and seed, as for File 001:
+
+```bash
+npm run answers:seal
+```
+
+```bash
+npm run seed:emulator
+```
+
+The photographs are processed by `npm run cellar`
+([`scripts/process-cellar.mjs`](scripts/process-cellar.mjs)), from sources in
+`.image-src/goldmaker`. How each was made is in
+[`docs/image-prompts.md`](docs/image-prompts.md).
+
+### A price
+
+File 002 is free for now, and the site makes no promise about later. There is
+one place a price would be enforced:
+[`functions/src/goldmaker/access.ts`](functions/src/goldmaker/access.ts).
+Everything a visitor can do in the cellar needs a file, only `enter` makes
+one, and `enter` asks `mayEnter` first. Today it lets everyone in. The rules
+keep the cellar's contents from anyone without a file, so a check there is a
+check on the whole room. The matching place on the page is
+[`components/goldmaker/Warrant.tsx`](components/goldmaker/Warrant.tsx).
+
+### Opening a sealed door
+
+When a room is ready to be listed:
+
+1. Set `LISTED = true` in its `listing.ts`. Its pages stop asking not to be
+   listed.
+2. Give it an entry in [`lib/site/catalogue.ts`](lib/site/catalogue.ts) and
+   take its number out of the sealed ones. Add its front page to
+   [`app/sitemap.ts`](app/sitemap.ts).
+3. Retake the three photographs of the venue that show its door sealed: the
+   corridor, the key rack and the reception (see "The photographs", above).
+4. Read How it works, About, Privacy and Terms again. They were written when
+   one room was open.
+
 ## Stack
 
 - **Next.js 16** (App Router) + TypeScript + **Tailwind CSS 4**, built as a
@@ -303,6 +488,9 @@ instead, create `.env.development.local` containing
 | `rooms/{roomId}` | `scripts/content/rooms.ts` | Title, exhibit, witness, papers, figures, prompt |
 | `rooms/verdict` | `scripts/content/rooms.ts` | The five who can be named, and what each of them said |
 | `stats/global` | | `{ entered: 0, closed: 0 }`, created only if missing. Seeding never resets live counters. |
+| `games/goldmaker/content/cellar` | `scripts/content/goldmaker.ts` | File 002: what is in the cellar when a visitor walks in |
+| `games/goldmaker/secrets/engine` | `answers.json`, under `goldmaker` | File 002: what happens, the lock settings and true answers as hashes, the hints, the closing account |
+| `stats/goldmaker` | | `{ entered: 0, closed: 0 }`, created only if missing |
 
 `answers.json` is **git-ignored**. It is the only place the codes exist in the
 clear outside Firestore. Its shape is in `answers.example.json`:
@@ -383,10 +571,10 @@ npm test
 
 | Command | What it proves |
 | --- | --- |
-| `npm run test:unit` | 102 tests. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Every photograph of the venue is on disk at each width the page offers, and none is heavy. Nothing from `answers.json` is in a tracked file. |
-| `npm run test:rules` | 43 tests with `@firebase/rules-unit-testing`: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. Nobody can read or write the contact inbox. |
-| `npm run test:functions` | 44 tests driving `checkAnswer`, `signOath`, `takeHint`, `accuse` and `sendMessage` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, a case that is counted once, and a contact form that tidies what it is sent, refuses what is wrong and stops at three messages a day. |
-| `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`. |
+| `npm run test:unit` | 138 tests. The Gold-Maker's engine on a made-up cellar, the real cellar as it is written, and its sealed half walked from the door to the report. Answer normalisation and hashing. The room order in `firestore.rules` matches the code, and every room has content. Ranks. A pasted key is repaired or refused without any of it being shown. Sealed answers open only for the key they were sealed for. The project check, against a pretend Google. The main website's catalogue, its addresses and the redirects from the old ones, and the contact form's checks. What counts as an answer to the analytics question, and that analytics can only start where that answer is checked. The practice box on the home page opens on what its three clues add up to, and does not spell that out anywhere. Every photograph of the venue is on disk at each width the page offers, and none is heavy. Nothing from `answers.json` is in a tracked file. |
+| `npm run test:rules` | 49 tests with `@firebase/rules-unit-testing`: in File 002 the cellar is shown only to a visitor with a file, what it keeps to itself is never readable, and nobody can make or change their own file. In File 001: a player cannot read a locked room, cannot read answers, cannot write their own progress. The wall stays shut until the seventh room is solved, who did it is never readable, and nobody can close their own case. Nobody can read or write the contact inbox. |
+| `npm run test:functions` | 55 tests driving `checkAnswer`, `signOath`, `takeHint`, `accuse`, `sendMessage` and `goldmaker` through the emulators as a browser would: room order, ten tries a minute, unique badges, hint tiers and penalties, alternate spellings, three accusations, the rank, a case that is counted once, and a contact form that tidies what it is sent, refuses what is wrong and stops at three messages a day. |
+| `npm run check:bundle` | After a build: no code, hint, evidence, rebuttal, statement, ledger row, line of cipher or room paper appears anywhere in `/out`, and nothing from the cellar of File 002, open half or sealed. |
 | `npm run verify` | Typecheck, lint, all tests, a production build and the bundle check. |
 
 ## Deploy
@@ -726,6 +914,13 @@ app/
                              journal, register, marsh, lamp
     ashgrove/verdict/page.tsx       the accusation
     ashgrove/icon.svg        the room's own tab icon
+  (goldmaker)/               THE GOLD-MAKER
+    layout.tsx               its own root layout: typefaces, metadata, header,
+                             footer, providers
+    goldmaker.css            its tokens and every primitive
+    goldmaker/page.tsx       its front page, and the warrant
+    goldmaker/cellar/page.tsx       the room
+    goldmaker/icon.svg       the room's own tab icon
   global-not-found.tsx       the one 404 page, for any address on the site
   robots.ts  sitemap.ts
 components/
@@ -733,6 +928,10 @@ components/
                              Clauses, ContactForm, AnalyticsChoice, Arrow,
                              Seal, and the home page's own: Photo, TodayBoard,
                              PracticeBox, RoomPlate, LiveCount
+  goldmaker/                 File 002: CellarProvider, Cellar, Scene, ThingPanel,
+                             Lock, Paper, Captain, Report, Ending, Warrant,
+                             Sheet, Photo, Bird, Sign, RoomStrip, RoomFoot,
+                             Consent
   index.ts                   everything the room exposes for later rooms
   ui/                        Frame, DoubleRule, Section, FileLabel, BlendImage,
                              PinnedPhoto, Reveal, EvidenceCard, Redaction,
@@ -755,6 +954,9 @@ lib/
                              practice (the box on the desk), contact (the
                              form's checks and its one call), fonts, fonts-404,
                              venue.generated (the photographs and their sizes)
+  goldmaker/                 File 002: api (its one callable), world (the
+                             cellar as one visitor finds it), shape, fonts,
+                             pictures, listing (is its door open)
   consent.ts  use-consent.ts the answer about analytics, for the whole site
   firebase.ts                one initialisation; analytics only once allowed
   api.ts                     the room's four callables, as the browser calls them
@@ -764,6 +966,8 @@ lib/
 functions/
   src/index.ts
   src/handlers/              checkAnswer, signOath, takeHint, accuse, sendMessage
+  src/goldmaker/             File 002: shape, engine, handler (goldmaker), hash,
+                             access
   src/lib/                   answers (normalise + hash), player, validate, options
   src/config/                game.ts (room order, routes, limits, ranks),
                              contact.ts (the form's limits), region.ts
@@ -777,9 +981,12 @@ scripts/
   check-bundle.ts            fails if anything secret is in /out
   process-images.mjs         the room's sources to 2400px WebP
   process-venue.mjs          the venue's photographs to WebP, at several widths
+  process-cellar.mjs         File 002's pictures to WebP, at several widths
   make-og.mjs                draws the main website's link preview picture
   content/                   rooms.ts (the seven rooms and the wall), answers.ts
-                             (reads answers.json), types.ts, images.generated.json
+                             (reads answers.json), types.ts, images.generated.json,
+                             goldmaker.ts (the cellar), goldmaker-secrets.ts
+                             (its sealed half), cellar-images.generated.json
 tests/
   unit/  rules/  functions/
 docs/
@@ -787,6 +994,7 @@ docs/
   screenshots/
 public/images/               the room's fifteen .webp files
 public/venue/                the main website's photographs of the venue
+public/cellar/               File 002's photographs and woodcuts
 public/unsealed*             the main website's icon and link preview picture
 .github/workflows/
   deploy.yml                 deploy to Firebase from the Actions tab
@@ -813,13 +1021,15 @@ answers.sealed.json          answers.json, sealed for the deploy key
   `scripts/content/rooms.ts` is everything a detective is shown, and anyone
   can read it here. What they cannot read here is what a detective has to
   find: the codes, the hints, the evidence, why it was not each suspect, and
-  the closing account. Those are in `answers.sealed.json` only.
+  the closing account. Those are in `answers.sealed.json` only. The same
+  holds for File 002: `scripts/content/goldmaker.ts` is the cellar as anyone
+  walking in would see it, and what any of it does is sealed.
 - **Functions run in `northamerica-northeast1`,** because that is where this
   project's Firestore database is. The region is one constant,
   `functions/src/config/region.ts`, and the web app reads the same one.
-- **Each stylesheet reads only its own files.** `site.css` and `ashgrove.css`
-  both start with `@import 'tailwindcss' source(none)` and then name the
-  folders they belong to. A class used in a new folder produces no CSS until
+- **Each stylesheet reads only its own files.** `site.css`, `ashgrove.css`
+  and `goldmaker.css` each start with `@import 'tailwindcss' source(none)` and
+  then name the folders they belong to. A class used in a new folder produces no CSS until
   that folder is added to the right list.
 - **The 404 page has its own copies of the typefaces,**
   `lib/site/fonts-404.ts`, with preloading off. It belongs to the whole site,

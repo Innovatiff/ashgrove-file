@@ -6,6 +6,7 @@
     "hints: exactly three, cheapest first. They cost 5, 10 and 20 minutes. The threshold has none.",
     "evidence: the cards a solved room gives up. Each id is written to the player's file on success. 'reveal' is the text that replaces the redaction bar.",
     "verdict.answer: the id of one suspect in scripts/content/rooms.ts. verdict.rebuttals: for each of the others, why it was not them. verdict.evidence: the closing account, whose id is VERDICT_DOSSIER.account and whose title is that suspect's name.",
+    "goldmaker: the sealed half of File 002, The Gold-Maker, read by scripts/content/goldmaker-secrets.ts. 'reactions' say what happens when a tool is tried on a thing (the first that fits is used; one that gives something must set a flag and list it under 'unless'). 'locks' give each lock's setting as a list of faces, stored only as a hash. 'hints' are three to a topic, cheapest first. 'report' says which choice is true for each question and which flags prove it. 'walkthrough' is the shortest honest way through, which the seed walks before it writes anything.",
     "Then run: npm run seed:emulator   or   npm run answers:seal and commit answers.sealed.json, so the deploy can open it."
   ],
   "threshold": {
@@ -28,8 +29,15 @@
     ]
   },
   "coroner": {
-    "answer": ["ONE WAY OF WRITING IT", "ANOTHER WAY"],
-    "hints": ["First hint.", "Second hint.", "Third hint."],
+    "answer": [
+      "ONE WAY OF WRITING IT",
+      "ANOTHER WAY"
+    ],
+    "hints": [
+      "First hint.",
+      "Second hint.",
+      "Third hint."
+    ],
     "evidence": [
       {
         "id": "coroner-cause",
@@ -50,6 +58,135 @@
         "title": "The suspect's name, exactly as it is on the wall",
         "body": "What happened. A blank line starts a new paragraph."
       }
+    ]
+  },
+  "goldmaker": {
+    "defaults": {
+      "hands": "What is said when a tool is tried and nothing in particular happens. One line for every tool."
+    },
+    "fallback": "Nothing comes of that.",
+    "reactions": [
+      {
+        "id": "rug-hands",
+        "tool": "hands",
+        "target": "a-thing-id",
+        "unless": [
+          "has-key"
+        ],
+        "text": "What happens, said to the visitor.",
+        "set": [
+          "has-key"
+        ],
+        "reveal": {
+          "tools": [
+            {
+              "id": "key",
+              "name": "A key",
+              "text": "What it is."
+            }
+          ]
+        }
+      },
+      {
+        "id": "rug-again",
+        "tool": "hands",
+        "target": "a-thing-id",
+        "text": "The plain line, once the key is found.",
+        "quiet": true
+      }
+    ],
+    "locks": [
+      {
+        "id": "a-lock-id",
+        "answer": [
+          "a-face-id",
+          "another-face-id"
+        ],
+        "text": "What is said when it opens.",
+        "set": [
+          "a-lock-id-open"
+        ],
+        "reveal": {
+          "report": {
+            "ask": "Well?",
+            "questions": [
+              {
+                "id": "who",
+                "ask": "It was",
+                "options": [
+                  {
+                    "id": "a",
+                    "label": "one answer"
+                  },
+                  {
+                    "id": "b",
+                    "label": "another"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "hints": [
+      {
+        "id": "a-topic",
+        "label": "What the captain is asked about",
+        "until": [
+          "has-key"
+        ],
+        "tiers": [
+          "A nudge.",
+          "Most of it.",
+          "The answer."
+        ]
+      }
+    ],
+    "report": {
+      "when": [
+        "a-lock-id-open"
+      ],
+      "early": "What is said to a visitor who reports too soon.",
+      "answers": {
+        "who": "b"
+      },
+      "needs": {
+        "who": [
+          "has-key"
+        ]
+      },
+      "unproven": {
+        "who": "What is said when it has not been proved."
+      },
+      "wrong": {
+        "who": "What is said when it is proved and wrong."
+      },
+      "closed": {
+        "title": "What happened",
+        "body": "The closing account. A blank line starts a new paragraph."
+      }
+    },
+    "walkthrough": [
+      [
+        "try",
+        "hands",
+        "a-thing-id"
+      ],
+      [
+        "set",
+        "a-lock-id",
+        [
+          "a-face-id",
+          "another-face-id"
+        ]
+      ],
+      [
+        "report",
+        {
+          "who": "b"
+        }
+      ]
     ]
   }
 }

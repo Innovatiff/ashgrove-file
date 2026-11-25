@@ -35,4 +35,4 @@ export const SITE_HOME = '/';
 export const WAY_OUT = [{ href: '/#rooms', label: 'All rooms' }, { href: '/contact', label: 'Contact' }, ...LEGAL] as const;
 
 /** Shown on the privacy and terms pages. Change it when either page changes. */
-export const LEGAL_UPDATED = '17 November 2026';
+export const LEGAL_UPDATED = '25 November 2026';

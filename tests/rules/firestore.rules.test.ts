@@ -148,6 +148,12 @@ beforeEach(async () => {
     await setDoc(doc(db, 'evidence', 'cleared-suspect-c'), { title: 'Cleared', body: 'Not them either.' });
     await setDoc(doc(db, 'badges', 'ASH-0417'), { uid: 'sworn' });
     await setDoc(doc(db, 'stats', 'global'), { entered: 2, closed: 0 });
+
+    // File 002, The Gold-Maker. One visitor has been shut in the cellar.
+    await setDoc(doc(db, 'games/goldmaker/players/sworn'), { name: 'Ada Marsh', flags: {}, marks: 0, tools: {}, notes: {} });
+    await setDoc(doc(db, 'games/goldmaker/content/cellar'), { start: 'cellar', things: [{ id: 'bar' }] });
+    await setDoc(doc(db, 'games/goldmaker/secrets/engine'), { reactions: [{ id: 'r', text: 'What happens.' }], locks: [{ id: 'l', hashes: ['dd'] }] });
+    await setDoc(doc(db, 'stats', 'goldmaker'), { entered: 1, closed: 0 });
     await setDoc(doc(db, 'messages', 'from-sworn'), { uid: 'sworn', name: 'A sender', email: 'a@example.com', message: 'Hello.' });
     await setDoc(doc(db, 'messageLimits', 'sender-sworn'), { count: 3 });
   });
@@ -394,5 +400,55 @@ describe('the contact form', () => {
     await assertFails(getDoc(doc(as('sworn'), 'messageLimits', 'sender-sworn')));
     await assertFails(setDoc(doc(as('sworn'), 'messageLimits', 'sender-sworn'), { count: 0 }));
     await assertFails(deleteDoc(doc(as('sworn'), 'messageLimits', 'sender-sworn')));
+  });
+});
+
+describe('File 002, The Gold-Maker', () => {
+  it('shows the cellar only to a visitor who has been shut in', async () => {
+    await assertSucceeds(getDoc(doc(as('sworn'), 'games/goldmaker/content/cellar')));
+    // A detective in the other room has no file in this one.
+    await assertFails(getDoc(doc(as('solvedStudy'), 'games/goldmaker/content/cellar')));
+    await assertFails(getDoc(doc(as('stranger'), 'games/goldmaker/content/cellar')));
+    await assertFails(getDoc(doc(anonymous(), 'games/goldmaker/content/cellar')));
+    await assertFails(getDocs(collection(as('sworn'), 'games/goldmaker/content')));
+  });
+
+  it('never lets anyone read what the cellar keeps to itself', async () => {
+    for (const who of ['sworn', 'closed', 'stranger']) {
+      await assertFails(getDoc(doc(as(who), 'games/goldmaker/secrets/engine')));
+      await assertFails(getDocs(collection(as(who), 'games/goldmaker/secrets')));
+    }
+    await assertFails(getDoc(doc(anonymous(), 'games/goldmaker/secrets/engine')));
+  });
+
+  it('keeps a visitor’s file to its owner', async () => {
+    const own = await assertSucceeds(getDoc(doc(as('sworn'), 'games/goldmaker/players/sworn')));
+    assert.equal(own.get('name'), 'Ada Marsh');
+    await assertFails(getDoc(doc(as('solvedStudy'), 'games/goldmaker/players/sworn')));
+    await assertFails(getDoc(doc(anonymous(), 'games/goldmaker/players/sworn')));
+    await assertFails(getDocs(collection(as('sworn'), 'games/goldmaker/players')));
+  });
+
+  it('denies a visitor shutting themselves in, or writing anything to their own file', async () => {
+    // Making a file is how a visitor gets in, so it is the thing a price would guard.
+    await assertFails(setDoc(doc(as('stranger'), 'games/goldmaker/players/stranger'), { name: 'Me', flags: {}, marks: 0 }));
+    await assertFails(updateDoc(doc(as('sworn'), 'games/goldmaker/players/sworn'), { marks: 0 }));
+    await assertFails(updateDoc(doc(as('sworn'), 'games/goldmaker/players/sworn'), { 'flags.furnace-open': NOW }));
+    await assertFails(updateDoc(doc(as('sworn'), 'games/goldmaker/players/sworn'), { closedAt: NOW, rank: 'Master of the Mint' }));
+    await assertFails(updateDoc(doc(as('sworn'), 'games/goldmaker/players/sworn'), { 'tools.key': { id: 'key', name: 'A key', text: '' } }));
+    await assertFails(deleteDoc(doc(as('sworn'), 'games/goldmaker/players/sworn')));
+  });
+
+  it('denies writing the cellar, its secrets or its count', async () => {
+    await assertFails(setDoc(doc(as('sworn'), 'games/goldmaker/content/cellar'), { start: 'lane' }));
+    await assertFails(setDoc(doc(as('sworn'), 'games/goldmaker/secrets/engine'), { locks: [] }));
+    await assertFails(updateDoc(doc(as('sworn'), 'stats', 'goldmaker'), { closed: increment(1) }));
+    await assertFails(setDoc(doc(as('sworn'), 'games/goldmaker/anything/else'), { a: 1 }));
+    await assertFails(setDoc(doc(as('sworn'), 'games/another-room/players/sworn'), { name: 'Me' }));
+  });
+
+  it('lets anyone read how many have gone in and come out', async () => {
+    const stats = await assertSucceeds(getDoc(doc(anonymous(), 'stats', 'goldmaker')));
+    assert.equal(stats.get('entered'), 1);
   });
 });

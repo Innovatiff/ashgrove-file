@@ -4,6 +4,8 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { readAnswers, secretsOf } from '../../scripts/content/answers';
+import { CELLAR } from '../../scripts/content/goldmaker';
+import { GOLDMAKER_KEY, readGoldmaker, SEARCHABLE } from '../../scripts/content/goldmaker-secrets';
 
 // The repository is public. answers.json is not in it, and nothing that is in
 // it may repeat what answers.json holds: not a code, not a hint, not the
@@ -29,10 +31,17 @@ describe('the repository', () => {
       return t.skip('not a git checkout');
     }
 
-    const file = readAnswers(JSON.parse(readFileSync(answersPath, 'utf8')));
+    const raw = JSON.parse(readFileSync(answersPath, 'utf8')) as Record<string, unknown>;
+    const file = readAnswers(raw);
     // Short values are left to the bundle check's own rule: four characters and up.
     const secrets = secretsOf(file).filter((secret) => secret.text.trim().length >= 4);
     assert.ok(secrets.length > 20, 'there should be plenty to look for');
+
+    // File 002, The Gold-Maker: everything its sealed half holds.
+    const sizes = JSON.parse(readFileSync(path.join(root, 'scripts/content/cellar-images.generated.json'), 'utf8'));
+    const cellar = readGoldmaker(CELLAR, raw[GOLDMAKER_KEY], sizes).strings.filter((secret) => secret.text.trim().length >= SEARCHABLE);
+    assert.ok(cellar.length > 150, 'there should be plenty to look for in the cellar too');
+    for (const secret of cellar) secrets.push({ what: `The Gold-Maker: ${secret.what}`, text: secret.text });
 
     const flatten = (text: string) => text.replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
     const leaks: string[] = [];

@@ -46,17 +46,21 @@ const CLAUSES: readonly Clause[] = [
     name: 'When you play a room',
     body: (
       <>
-        <p>A room has to remember your place. When you open {ASHGROVE.title}:</p>
+        <p>A room has to remember your place. When you go into one:</p>
         <ul>
           <li>
             <strong>An anonymous account is made for your browser.</strong> It is a random identifier with no name
             and no email address attached, issued by Firebase Authentication, a Google service. It is stored in your
-            browser. It is how the room finds your file again.
+            browser. It is how a room finds your file again, and every room uses the same one. {ASHGROVE.title} makes
+            it when you open its front page. A room that asks you to sign before it lets you in makes it when you
+            sign, and not before.
           </li>
           <li>
-            <strong>A file is kept under that identifier.</strong> It holds the name you choose to sign with, a badge
-            number, which rooms you have solved and when, which hints you have taken, how many guesses you have made
-            in the last minute, the accusations you have made and when you finished.
+            <strong>A file is kept under that identifier, one for each room you go into.</strong> It holds the name
+            you choose to sign with and, in {ASHGROVE.title}, a badge number. It holds what you have solved, opened
+            and found in that room and when, the room’s own notes of what you tried, which hints you have taken, how
+            many tries you have made in the last minute, the accusations or reports you have made, and when and how
+            you finished.
           </li>
         </ul>
       </>
@@ -67,8 +71,8 @@ const CLAUSES: readonly Clause[] = [
     body: (
       <>
         <p>
-          A room would like to count what happens in it: that a room was solved, that a hint was taken, that an
-          accusation was made. We use the numbers to see where people get stuck. The counting is done by Google
+          A room would like to count what happens in it: that somebody went in, that a room was solved, that a hint
+          was taken, that an accusation was made or a case closed. We use the numbers to see where people get stuck. The counting is done by Google
           Analytics, which sets cookies in your browser to tell one visitor from another.
         </p>
         <p>
@@ -100,8 +104,8 @@ const CLAUSES: readonly Clause[] = [
     body: (
       <p>
         The contact form stores your name, your email address, your message and the time you sent it, so that we can
-        read it and answer it. If your browser has a file in a room, the badge number and name on that file are
-        attached, so that we can find it if you ask us about it. To slow down abuse, sending a message gives your
+        read it and answer it. If your browser has a file in {ASHGROVE.title}, the badge number and name on that
+        file are attached, so that we can find it if you ask us about it. To slow down abuse, sending a message gives your
         browser the same kind of anonymous identifier a room does.
       </p>
     ),
@@ -149,8 +153,8 @@ const CLAUSES: readonly Clause[] = [
       <ul>
         <li>
           <strong>To see or delete your file, or have a message removed,</strong> write to us through the{' '}
-          <Link href="/contact">contact page</Link>. Tell us the name and badge number on your file so that we can
-          find it.
+          <Link href="/contact">contact page</Link>. Tell us the name on your file, and its badge number if it has
+          one, so that we can find it.
         </li>
         <li>
           <strong>Clearing this site’s data in your browser</strong> removes the identifier from your device. Unless

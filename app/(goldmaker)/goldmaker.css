@@ -1,0 +1,865 @@
+@import 'tailwindcss' source(none);
+
+/* Only this room's own files are read for class names. The main website and
+   The Ashgrove File each have a stylesheet of their own and share none of
+   this one. */
+@source './';
+@source '../../components/goldmaker';
+@source '../../lib/goldmaker';
+
+/* ==========================================================================
+   THE GOLD-MAKER
+   File 002. A cellar in Prague, 1593, and a book printed there.
+
+   It is neither of the other two. The main website is daylight on bone
+   paper. The Ashgrove File is a black archive and a typewriter. This is
+   verdigris and brass: the green of old copper for the page, the yellow of
+   brass for anything that can be turned or pressed, and vellum for anything
+   that is read. Titles are set in a blackletter, as a Prague printer would
+   have set them. Everything else is a Garamond.
+
+   The photographs carry the candlelight. What is not a photograph is flat:
+   no shadows, no blur, no gradients, no glow.
+   ========================================================================== */
+
+:root {
+  --pitch: #0d1916; /* the page */
+  --verdigris: #14302a; /* panels */
+  --verdigris-2: #1c4038; /* raised and pressed */
+  --line: #2c574d; /* hairlines */
+  --line-2: #4a8172; /* stronger rules, quiet outlines */
+  --bone: #e4dcc6; /* text on the dark */
+  --mute: #9db3a9; /* labels and notes on the dark */
+  --brass: #dba945; /* what can be pressed or turned, and titles */
+  --brass-deep: #b1832c; /* pressed brass */
+  --vellum: #efe5cc; /* what is read */
+  --vellum-2: #e2d5b4; /* rules and wells on vellum */
+  --ink: #1e1a12; /* text on vellum */
+  --ink-2: #4b4331; /* notes on vellum */
+  --rubric: #a52f20; /* the printer's red */
+
+  /* The colours a ring can be turned to. */
+  --ring-black: #17140f;
+  --ring-white: #f6f1e3;
+  --ring-gold: #dba945;
+  --ring-red: #b3382a;
+  --ring-green: #2f7d5b;
+  --ring-blue: #2c5d8f;
+
+  --wrap: 1280px;
+  --pad: clamp(16px, 4vw, 48px);
+  --scene-h: clamp(430px, 56svh, 760px);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-pitch: var(--pitch);
+  --color-verdigris: var(--verdigris);
+  --color-verdigris-2: var(--verdigris-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-bone: var(--bone);
+  --color-mute: var(--mute);
+  --color-brass: var(--brass);
+  --color-vellum: var(--vellum);
+  --color-ink: var(--ink);
+  --color-rubric: var(--rubric);
+
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --blur-*: initial;
+
+  --font-title: var(--font-grenze), 'Old English Text MT', 'UnifrakturCook', Georgia, serif;
+  --font-text: var(--font-garamond), 'Garamond', 'Adobe Garamond Pro', 'Iowan Old Style', Georgia, serif;
+}
+
+/* ------------------------------------------------------------------ base -- */
+
+@layer base {
+  html {
+    background: var(--pitch);
+    color: var(--bone);
+    color-scheme: dark;
+    scrollbar-color: var(--line-2) var(--pitch);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Keeps whatever takes the focus clear of the question about analytics. */
+    scroll-padding-bottom: calc(var(--consent-height, 0px) + 16px);
+  }
+
+  body {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    font-family: var(--font-text);
+    font-size: 1.1875rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--brass);
+    color: var(--pitch);
+  }
+
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 3px;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 400;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  img {
+    max-width: 100%;
+  }
+
+  [id] {
+    scroll-margin-top: 24px;
+  }
+}
+
+/* ---------------------------------------------------------------- layout -- */
+
+.wrap {
+  width: 100%;
+  max-width: calc(var(--wrap) + 2 * var(--pad));
+  margin-inline: auto;
+  padding-inline: var(--pad);
+}
+
+.skip {
+  position: absolute;
+  left: 12px;
+  top: -80px;
+  z-index: 50;
+  background: var(--brass);
+  color: var(--pitch);
+  padding: 10px 16px;
+}
+.skip:focus {
+  top: 12px;
+}
+
+.hidden-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ type -- */
+
+/* The blackletter, for the room's name and for the head of each part. */
+.title {
+  font-family: var(--font-title);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  color: var(--brass);
+}
+.title--1 {
+  font-size: clamp(3.4rem, 10vw, 8rem);
+}
+.title--2 {
+  font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+}
+.title--3 {
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+}
+
+/* Small capitals, spaced: what a thing is, before what it says. */
+.label {
+  font-size: 0.8125rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.lede {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  line-height: 1.4;
+}
+
+.mute {
+  color: var(--mute);
+}
+.brass {
+  color: var(--brass);
+}
+
+.link {
+  color: var(--brass);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+.link:hover {
+  text-decoration-thickness: 2px;
+}
+
+.prose p + p {
+  margin-top: 0.85em;
+}
+
+/* --------------------------------------------------------------- buttons -- */
+
+.btn {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  border: 1px solid var(--brass);
+  padding: 8px 20px;
+  color: var(--brass);
+  font-size: 1.0625rem;
+  line-height: 1.2;
+  text-align: center;
+  transition:
+    background-color 140ms var(--ease),
+    color 140ms var(--ease);
+}
+.btn:hover:not(:disabled),
+.btn[aria-pressed='true'] {
+  background: var(--brass);
+  color: var(--pitch);
+}
+.btn:disabled {
+  border-color: var(--line-2);
+  color: var(--mute);
+}
+/* Solid brass: the one thing on a page that is meant to be pressed. */
+.btn--solid {
+  background: var(--brass);
+  color: var(--pitch);
+}
+.btn--solid:hover:not(:disabled) {
+  background: var(--bone);
+  border-color: var(--bone);
+}
+.btn--solid:disabled {
+  background: transparent;
+}
+.btn--small {
+  min-height: 40px;
+  padding: 6px 14px;
+  font-size: 1rem;
+}
+/* On vellum, brass does not show. Ink does. */
+.vellum .btn {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.vellum .btn:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--vellum);
+}
+
+/* ---------------------------------------------------------------- vellum -- */
+
+/* Anything that is read: an order, a chart, a leaf of a book. */
+.vellum {
+  background: var(--vellum);
+  color: var(--ink);
+  border: 1px solid var(--vellum-2);
+  outline: 1px solid var(--ink);
+  outline-offset: -7px;
+  padding: clamp(22px, 4vw, 40px);
+}
+.vellum :focus-visible {
+  outline-color: var(--rubric);
+}
+.vellum .label {
+  color: var(--ink-2);
+}
+.vellum .title {
+  color: var(--ink);
+}
+.vellum .link {
+  color: var(--rubric);
+}
+.rubric {
+  color: var(--rubric);
+}
+.vellum__note {
+  margin-top: 1.2em;
+  border-top: 1px solid var(--vellum-2);
+  padding-top: 0.7em;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--ink-2);
+}
+/* The first letter of a paper, in the printer's red. It is set in the
+   Garamond and not the blackletter: a blackletter capital on its own is
+   hard to tell from its neighbours. */
+.vellum .dropcap {
+  /* Keeps the big letter inside its own paragraph, however short that is. */
+  display: flow-root;
+}
+.vellum .dropcap::first-letter {
+  float: left;
+  margin: 0.06em 0.09em 0 0;
+  font-size: 3.35em;
+  font-weight: 500;
+  line-height: 0.76;
+  color: var(--rubric);
+}
+
+/* ----------------------------------------------------------------- strip -- */
+
+/* The top of every page of the room. */
+.strip {
+  border-bottom: 1px solid var(--line);
+}
+.strip__inner {
+  display: flex;
+  min-height: 56px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding-block: 8px;
+}
+.strip__name {
+  font-family: var(--font-title);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--brass);
+}
+
+/* ------------------------------------------------------------------ foot -- */
+
+.foot {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-block: 18px;
+  font-size: 1rem;
+  color: var(--mute);
+}
+.foot a,
+.foot button {
+  display: inline-block;
+  padding-block: 6px;
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 0.2em;
+}
+.foot a:hover,
+.foot button:hover {
+  color: var(--bone);
+}
+.foot__run {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 22px;
+}
+
+/* ------------------------------------------------------------ the front -- */
+
+.hero__photo {
+  display: block;
+  width: 100%;
+  height: clamp(240px, 42vw, 640px);
+  object-fit: cover;
+  object-position: 50% 55%;
+  border-bottom: 1px solid var(--line);
+}
+
+/* A double rule, as a printer would set between two parts. */
+.rule {
+  height: 5px;
+  border-block: 1px solid var(--line-2);
+}
+
+.bird {
+  display: block;
+  border-radius: 50%;
+  background: var(--vellum);
+}
+/* On vellum the paper of the woodcut disappears into the page. */
+.vellum .bird {
+  mix-blend-mode: multiply;
+  background: transparent;
+}
+
+.ways {
+  display: grid;
+  gap: 28px 40px;
+}
+@media (min-width: 48rem) {
+  .ways {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.way {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+@media (min-width: 48rem) {
+  .facts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.facts > div {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 16px 14px 0;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field input {
+  min-height: 50px;
+  width: 100%;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  background: transparent;
+  padding: 6px 2px;
+  font-size: 1.35rem;
+  font-style: italic;
+  color: var(--ink);
+}
+.field input::placeholder {
+  color: var(--ink-2);
+  opacity: 0.7;
+}
+.field input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--rubric);
+}
+
+/* -------------------------------------------------------------- the scene -- */
+
+/* One picture of where the visitor stands, with everything that can be
+   looked at marked on it. On a narrow screen the picture keeps its height
+   and is slid from side to side, like turning the head. */
+.scene {
+  border-block: 1px solid var(--line);
+  background: #070d0b;
+}
+.scene__pan {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.scene__frame {
+  position: relative;
+  height: var(--scene-h);
+  aspect-ratio: var(--ratio);
+  margin-inline: auto;
+}
+.scene__picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A thing that can be looked at. */
+.spot {
+  position: absolute;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+/* A small brass lozenge says: there is something here. */
+.spot::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 2px solid var(--brass);
+  outline: 1px solid rgb(5 10 9 / 0.75);
+  background: rgb(5 10 9 / 0.45);
+  transition: background-color 140ms var(--ease);
+}
+.spot:hover::after,
+.spot[data-hinted='true']::after,
+.spot[data-chosen='true']::after {
+  background: var(--brass);
+}
+.spot:hover,
+.spot[data-hinted='true'] {
+  outline: 1px solid var(--brass);
+  outline-offset: 0;
+}
+.spot[data-chosen='true'] {
+  outline: 2px solid var(--brass);
+  outline-offset: 0;
+}
+.spot__name {
+  position: absolute;
+  left: 50%;
+  bottom: calc(50% + 14px);
+  transform: translateX(-50%);
+  display: none;
+  width: max-content;
+  max-width: 220px;
+  background: var(--pitch);
+  border: 1px solid var(--brass);
+  padding: 2px 9px;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--bone);
+  pointer-events: none;
+  z-index: 2;
+}
+.spot:hover .spot__name,
+.spot[data-hinted='true'] .spot__name,
+.spot[data-chosen='true'] .spot__name {
+  display: block;
+}
+
+.scene__hint {
+  padding: 6px var(--pad);
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--mute);
+}
+@media (min-width: 64rem) {
+  .scene__hint {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------- the bench -- */
+
+/* Under the picture: what is being looked at, and what is being carried. */
+.bench {
+  display: grid;
+  gap: 28px 48px;
+  padding-block: 26px 48px;
+}
+@media (min-width: 64rem) {
+  .bench {
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.thing__close {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line-2);
+}
+/* The nearer photograph is a button: pressed, it opens to its full size. */
+.thing__look {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+.thing__look:hover .thing__close,
+.thing__look:focus-visible .thing__close {
+  border-color: var(--brass);
+}
+.thing__look span {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  background: var(--pitch);
+  border: 1px solid var(--brass);
+  padding: 1px 9px;
+  font-size: 0.95rem;
+  color: var(--bone);
+}
+@media (min-width: 48rem) {
+  .thing--pictured {
+    display: grid;
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+    gap: 26px;
+    align-items: start;
+  }
+}
+
+.list {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+.list > li {
+  border-bottom: 1px solid var(--line);
+}
+.list button,
+.list a {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 4px;
+  text-align: left;
+}
+.list button:hover,
+.list a:hover {
+  color: var(--brass);
+}
+.places {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 32px;
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* What happened, said once and left on the page. */
+.happened {
+  border-left: 3px solid var(--brass);
+  padding: 4px 0 4px 16px;
+}
+.happened--plain {
+  border-left-color: var(--line-2);
+  color: var(--mute);
+}
+.noted {
+  display: grid;
+  gap: 10px;
+}
+.noted li {
+  border-left: 1px solid var(--line-2);
+  padding-left: 14px;
+}
+
+/* ------------------------------------------------------------------ locks -- */
+
+.lock {
+  border: 1px solid var(--line-2);
+  padding: 18px;
+}
+.lock__rings {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.ring {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.ring__turn {
+  display: grid;
+  width: 100%;
+  min-height: 40px;
+  place-items: center;
+  border: 1px solid var(--line-2);
+  color: var(--brass);
+}
+.ring__turn:hover:not(:disabled) {
+  background: var(--verdigris-2);
+}
+.ring__face {
+  display: grid;
+  width: 100%;
+  min-height: 62px;
+  place-items: center;
+  border: 2px solid var(--brass);
+  padding: 4px;
+  font-size: 1.05rem;
+  line-height: 1.1;
+  text-align: center;
+}
+/* Numerals are set in the Garamond: a blackletter I, V and X are hard to tell apart. */
+.ring__face--numeral {
+  font-size: 1.9rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--brass);
+}
+.swatch {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--bone);
+}
+
+/* ---------------------------------------------------------------- dialogs -- */
+
+.sheet {
+  width: min(760px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  overflow: auto;
+  border: 1px solid var(--brass);
+  background: var(--pitch);
+  color: var(--bone);
+  padding: 0;
+}
+.sheet::backdrop {
+  background: rgb(5 10 9 / 0.86);
+}
+.sheet--vellum {
+  border: 0;
+  background: transparent;
+}
+.sheet__head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--pitch);
+  padding: 10px 14px 10px 22px;
+}
+.sheet__body {
+  padding: 22px;
+}
+.sheet--vellum .sheet__head {
+  border: 1px solid var(--vellum-2);
+  border-bottom: 0;
+  background: var(--vellum);
+  color: var(--ink);
+}
+.sheet--vellum .sheet__head .title {
+  color: var(--ink);
+}
+.sheet--vellum .sheet__head .btn {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.sheet--vellum .sheet__head .btn:hover {
+  background: var(--ink);
+  color: var(--vellum);
+}
+.sheet--vellum :focus-visible {
+  outline-color: var(--rubric);
+}
+/* A photograph, opened to its full size. */
+.sheet--wide {
+  width: min(1180px, calc(100vw - 24px));
+}
+.sheet__photo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ------------------------------------------------------------------ papers -- */
+
+.chart {
+  width: 100%;
+  border-collapse: collapse;
+}
+.chart th,
+.chart td {
+  border-bottom: 1px solid var(--vellum-2);
+  padding: 9px 12px 9px 0;
+  text-align: left;
+  vertical-align: middle;
+}
+.chart thead th {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.chart tbody th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sign {
+  width: 34px;
+  height: 34px;
+  color: var(--rubric);
+}
+
+.leaves {
+  display: grid;
+  gap: 26px 30px;
+}
+@media (min-width: 40rem) {
+  .leaves {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.leaf {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.leaf__cut {
+  border: 1px dashed var(--ink-2);
+  padding: 8px 10px;
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+/* ----------------------------------------------------------------- consent -- */
+
+.consent {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  border-top: 1px solid var(--brass);
+  background: var(--verdigris);
+}
+
+/* ------------------------------------------------------------------ motion -- */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

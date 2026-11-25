@@ -39,6 +39,13 @@ export interface AnswersFile {
   problems: string[];
 }
 
+/**
+ * Entries of answers.json that belong to other rooms. File 002, The
+ * Gold-Maker, keeps its sealed half under "goldmaker", read by
+ * scripts/content/goldmaker-secrets.ts.
+ */
+export const OTHER_ROOMS: readonly string[] = ['goldmaker'];
+
 const isText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -76,7 +83,8 @@ export function readAnswers(raw: unknown): AnswersFile {
   if (!isObject(raw)) return { gates, verdict, problems: ['The answers file must be one JSON object.'] };
 
   for (const [key, entry] of Object.entries(raw)) {
-    if (key.startsWith('_')) continue;
+    // Notes to the reader, and the entries of other rooms (each has a reader of its own).
+    if (key.startsWith('_') || OTHER_ROOMS.includes(key)) continue;
 
     if (key === VERDICT) {
       if (!isObject(entry) || !isText(entry.answer)) {

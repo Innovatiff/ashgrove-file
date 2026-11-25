@@ -7,7 +7,11 @@
  *   - the code, any hint or any post-solve evidence for a room, any reason it
  *     was not one of the suspects, or the closing account (answers.json),
  *   - any paper, ledger cell, cipher line, statement, lede or prompt from a
- *     room or from the accusation (scripts/content/rooms.ts).
+ *     room or from the accusation (scripts/content/rooms.ts),
+ *   - anything from File 002, The Gold-Maker: what happens when a tool is
+ *     tried, a hint, a choice of the report, the closing account
+ *     (answers.json), or what is in the cellar from the start
+ *     (scripts/content/goldmaker.ts).
  *
  * Those live in Firestore only. A room's documents reach a browser through
  * the rules, and an answer never reaches one at all.
@@ -19,6 +23,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { readAnswers, secretsOf } from './content/answers';
+import { CELLAR } from './content/goldmaker';
+import { cellarLines, GOLDMAKER_KEY, readGoldmaker, SEARCHABLE } from './content/goldmaker-secrets';
 import { ROOMS, VERDICT_DOSSIER } from './content/rooms';
 
 const root = path.resolve(__dirname, '..');
@@ -40,8 +46,17 @@ const add = (what: string, text: unknown) => {
 };
 
 if (existsSync(answersPath)) {
-  const file = readAnswers(JSON.parse(readFileSync(answersPath, 'utf8')));
+  const raw = JSON.parse(readFileSync(answersPath, 'utf8')) as Record<string, unknown>;
+  const file = readAnswers(raw);
   for (const secret of secretsOf(file)) add(secret.what, secret.text);
+
+  // File 002, The Gold-Maker: what happens in the cellar, the hints, the
+  // report and the closing account.
+  const sizesPath = path.join(root, 'scripts', 'content', 'cellar-images.generated.json');
+  const sizes = existsSync(sizesPath) ? JSON.parse(readFileSync(sizesPath, 'utf8')) : {};
+  for (const secret of readGoldmaker(CELLAR, raw[GOLDMAKER_KEY], sizes).strings) {
+    if (secret.text.trim().length >= SEARCHABLE) add(`The Gold-Maker: ${secret.what}`, secret.text);
+  }
 } else {
   console.warn('answers.json not found: codes and hints cannot be checked, only room content.\n');
 }
@@ -75,6 +90,10 @@ for (const [roomId, room] of Object.entries(ROOMS)) {
     }
   }
 }
+
+// What is in the cellar from the start is not secret, but it is not in the
+// pages either: it comes from Firestore, once a visitor has a file.
+for (const line of cellarLines(CELLAR)) add(`The Gold-Maker: ${line.what}`, line.text);
 
 add('verdict: prompt', VERDICT_DOSSIER.prompt);
 VERDICT_DOSSIER.lede.forEach((line) => add('verdict: lede', line));

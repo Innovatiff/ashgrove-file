@@ -28,9 +28,9 @@ function howLong(from: unknown, to: unknown): string | null {
 // What the Mint makes of each rank. None of it says what happened in the cellar.
 const VERDICT: Record<string, string> = {
   'Master of the Mint': 'Nothing is written against your name. The Emperor has asked for it twice.',
-  Warden: 'A question or two at the hatch. The Mint has had worse wardens.',
-  Assayer: 'You asked, and you got there.',
-  Journeyman: 'The captain did some of the work, and has said so.',
+  Warden: 'A mark or two, and nothing worse. The Mint has had worse wardens.',
+  Assayer: 'It cost you something, and you got there.',
+  Journeyman: 'The cellar gave you a good deal of trouble, and the captain has said so.',
   Apprentice: 'The captain will be telling this story for years.',
 };
 
